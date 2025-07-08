@@ -1,0 +1,87 @@
+
+{
+  "leaderboard": [
+    { 
+      "rank": 1, 
+      "username": "SniperQueen", 
+      "gameId": "5123456789", 
+      "totalWinnings": 12500,
+      "avatar": "/img/media_profile_snipper_queens.png",
+      "clanName": "The Royals",
+      "bio": "Headshots are my love language. Bow down to the queen.",
+      "socialLinks": {
+        "twitter": "https://x.com/example",
+        "instagram": "https://instagram.com/example"
+      },
+      "gamesPlayed": 50,
+      "wins": 45,
+      "streak": 15,
+      "lastTournament": "Free Fire Frenzy",
+      "joinedOn": "2024-03-15"
+    },
+    { 
+      "rank": 2, 
+      "username": "ClutchGod", 
+      "gameId": "5987654321", 
+      "totalWinnings": 9800,
+      "avatar": "/img/media_profile_clutchgod.png",
+      "clanName": "Apex Predators",
+      "bio": "1v4? No problem. I live for the clutch moments.",
+      "socialLinks": {
+        "twitter": "https://x.com/example"
+      },
+      "gamesPlayed": 60,
+      "wins": 48,
+      "streak": 8,
+      "lastTournament": "The Grand Clash",
+      "joinedOn": "2024-01-20"
+    },
+    { 
+      "rank": 3, 
+      "username": "GamerXpert", 
+      "gameId": "5234567890", 
+      "totalWinnings": 7200,
+      "avatar": "https://placehold.co/100x100/7CFC00/333333.png?text=G",
+      "clanName": "The Strategists",
+      "bio": "Brain over brawn. Always 10 steps ahead.",
+      "socialLinks": {},
+      "gamesPlayed": 75,
+      "wins": 50,
+      "streak": 4,
+      "lastTournament": "Weekend Warriors Cup",
+      "joinedOn": "2023-11-01"
+    },
+    { 
+      "rank": 4, 
+      "username": "RushHour", 
+      "gameId": "5345678901", 
+      "totalWinnings": 5500,
+      "avatar": "https://placehold.co/100x100/7CFC00/333333.png?text=R",
+      "clanName": "Team Fury",
+      "bio": "W-key is the only key I know.",
+      "socialLinks": {
+         "instagram": "https://instagram.com/example"
+      },
+      "gamesPlayed": 100,
+      "wins": 60,
+      "streak": 2,
+      "lastTournament": "Weekend Warriors Cup",
+      "joinedOn": "2024-05-10"
+    },
+    { 
+      "rank": 5, 
+      "username": "ShadowStrike", 
+      "gameId": "5456789012", 
+      "totalWinnings": 4100,
+      "avatar": "https://placehold.co/100x100/FFFFFF/333333.png?text=S",
+      "clanName": "Phantoms",
+      "bio": "You won't see me coming.",
+      "socialLinks": {},
+      "gamesPlayed": 40,
+      "wins": 20,
+      "streak": 0,
+      "lastTournament": "PUBG Pro Series - Week 1",
+      "joinedOn": "2024-06-22"
+    }
+  ]
+}

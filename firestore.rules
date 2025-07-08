@@ -1,0 +1,104 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper function to check for the admin UID
+    function isAdmin() {
+      return request.auth.uid == 'ymwd0rW1wnNZkYlUR7cUi9dkd452';
+    }
+    
+    // Helper function to check if a user is logged in
+    function isLoggedIn() {
+      return request.auth != null;
+    }
+
+    // Helper function to check if the authenticated user is the owner of a document
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // Helper function to check if a user is a member of a community.
+    // This requires one read operation per check.
+    function isCommunityMember(communityId) {
+      return get(/databases/$(database)/documents/communities/$(communityId)).data.memberIds.hasAny([request.auth.uid]);
+    }
+
+    // Users can read any profile (for leaderboards, etc.).
+    // A user can only create or update their own profile.
+    // An admin can update any user profile.
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if isOwner(userId) && request.resource.data.uid == userId;
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Tournaments are public, but only admins can create, update, or delete them.
+    match /tournaments/{tournamentId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Users can create their own registration.
+    // A user can only read their own registration data.
+    // Admins can read/update all registrations.
+    match /registrations/{registrationId} {
+      allow create: if isLoggedIn() && request.resource.data.userId == request.auth.uid;
+      allow read: if isOwner(request.resource.data.userId) || isAdmin();
+      allow update, delete: if isAdmin();
+    }
+
+    // Anyone can submit a contact inquiry.
+    // Only admins can read or manage them.
+    match /inquiries/{inquiryId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Users can create their own redeem requests.
+    // Users can only read their own requests.
+    // Admins can manage all requests.
+    match /redeemRequests/{requestId} {
+       allow create: if isLoggedIn() && request.resource.data.userId == request.auth.uid;
+       allow read: if isOwner(request.resource.data.userId) || isAdmin();
+       allow update, delete: if isAdmin();
+    }
+    
+    // Winner logs are public, but only admins can write to them.
+    match /winners/{winnerId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Community rules
+    match /communities/{communityId} {
+      allow read: if true;
+      
+      // A logged-in user can create a community. The creatorId must match their UID.
+      allow create: if isLoggedIn() 
+                    && request.resource.data.creatorId == request.auth.uid
+                    && request.resource.data.memberIds[0] == request.auth.uid
+                    && request.resource.data.members == 1;
+
+      // The creator or an admin can update anything.
+      // Other logged-in users can only update the member list to join/leave.
+      allow update: if isLoggedIn() && (
+                      (get(/databases/$(database)/documents/communities/$(communityId)).data.creatorId == request.auth.uid) ||
+                      (request.resource.data.diff(get(/databases/$(database)/documents/communities/$(communityId)).data).affectedKeys().hasOnly(['memberIds', 'members'])) ||
+                      isAdmin()
+                    );
+      
+      // Only the creator or an admin can delete a community.
+      allow delete: if isAdmin() || get(/databases/$(database)/documents/communities/$(communityId)).data.creatorId == request.auth.uid;
+
+      // Messages Subcollection: Only community members can interact with messages.
+      match /messages/{messageId} {
+        allow read, write: if isCommunityMember(communityId);
+        // Users can only delete their own messages.
+        allow delete: if isOwner(resource.data.userId) || isAdmin();
+      }
+    }
+  }
+}

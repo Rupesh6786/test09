@@ -1,0 +1,65 @@
+
+[
+  {
+    "title": "PUBG Pro Series - Week 1",
+    "game": "PUBG",
+    "date": "2024-09-15",
+    "time": "19:00",
+    "entryFee": 100,
+    "prizePool": 10000,
+    "slotsTotal": 100,
+    "slotsAllotted": 0,
+    "status": "Upcoming",
+    "rules": [
+      "All players must use mobile devices.",
+      "Emulators are strictly forbidden.",
+      "Report scores via Discord."
+    ]
+  },
+  {
+    "title": "Free Fire Frenzy",
+    "game": "Free Fire",
+    "date": "2024-08-25",
+    "time": "17:00",
+    "entryFee": 50,
+    "prizePool": 5000,
+    "slotsTotal": 50,
+    "slotsAllotted": 35,
+    "status": "Ongoing",
+    "rules": [
+      "Team-up with hackers will result in a permanent ban.",
+      "Be respectful to other players.",
+      "Streaming is encouraged."
+    ]
+  },
+  {
+    "title": "The Grand Clash",
+    "game": "PUBG",
+    "date": "2024-08-10",
+    "time": "20:00",
+    "entryFee": 200,
+    "prizePool": 25000,
+    "slotsTotal": 100,
+    "slotsAllotted": 100,
+    "status": "Completed",
+    "rules": [
+      "All players must use mobile devices.",
+      "Emulators are strictly forbidden."
+    ]
+  },
+  {
+    "title": "Weekend Warriors Cup",
+    "game": "Free Fire",
+    "date": "2024-09-01",
+    "time": "14:00",
+    "entryFee": 30,
+    "prizePool": 3000,
+    "slotsTotal": 100,
+    "slotsAllotted": 22,
+    "status": "Upcoming",
+    "rules": [
+      "Squad mode only.",
+      "Check-in starts 30 minutes before the match."
+    ]
+  }
+]
