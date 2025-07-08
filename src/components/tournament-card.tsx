@@ -11,68 +11,53 @@ import { FreeFireIcon } from '@/components/icons/freefire-icon';
 import { Users, Calendar, Trophy, Coins, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { useRouter } from 'next/navigation';
-import { useToast } from '@/hooks/use-toast';
-import { format, isAfter, startOfToday } from 'date-fns';
 
 type TournamentCardProps = {
   tournament: Tournament;
 };
 
 export function TournamentCard({ tournament }: TournamentCardProps) {
-  const router = useRouter();
-  const { toast } = useToast();
-
   const slotsAllotted = tournament.slotsAllotted || 0;
   const slotsPercentage = (slotsAllotted / tournament.slotsTotal) * 100;
   const slotsLeft = tournament.slotsTotal - slotsAllotted;
   const isFull = slotsLeft <= 0;
 
-  let isUpcomingAndLocked = false;
-  if (tournament.status === 'Upcoming' && tournament.startDate) {
+  let registrationHasEnded = false;
+  if (tournament.status === 'Upcoming' && tournament.date && tournament.time) {
     try {
-      // Create a date object from the 'YYYY-MM-DD' string.
-      // Compare it with the start of today to see if it's in the future.
-      const startDate = new Date(tournament.startDate);
-      const today = startOfToday();
-      if (isAfter(startDate, today)) {
-        isUpcomingAndLocked = true;
+      // Combine date and time string into a valid Date object.
+      const registrationDeadline = new Date(`${tournament.date}T${tournament.time}`);
+      if (new Date() > registrationDeadline) {
+        registrationHasEnded = true;
       }
     } catch (e) {
-        console.error("Date comparison failed", e)
+      console.error("Could not parse tournament deadline:", e);
     }
   }
 
-  const handleCardClick = () => {
-    if (isUpcomingAndLocked) {
-      toast({
-        title: "Tournament Locked",
-        description: "This tournament is not started yet.",
-      });
-    } else {
-      router.push(`/tournaments/${tournament.id}`);
-    }
-  };
 
   const getButton = () => {
-    if (isUpcomingAndLocked) {
-        return (
-            <Button disabled className="w-full font-bold">
-                <Calendar className="w-4 h-4 mr-2" />
-                Will start on {format(new Date(tournament.startDate!), 'd MMM')}
-            </Button>
-        );
-    }
-    
+    // Highest priority: if slots are full.
     if (isFull) {
-        return (
-            <Button disabled className="w-full font-bold">
-                <Users className="w-4 h-4 mr-2" />
-                Slots Full
-            </Button>
-        );
+      return (
+        <Button disabled className="w-full font-bold">
+          <Users className="w-4 h-4 mr-2" />
+          Slots Full
+        </Button>
+      );
     }
-    
+
+    // Next priority: if registration deadline has passed.
+    if (registrationHasEnded) {
+       return (
+        <Button disabled className="w-full font-bold">
+            <Calendar className="w-4 h-4 mr-2" />
+            Registration Ended
+        </Button>
+      );
+    }
+
+    // Default case: Registration is open.
     return (
       <Button asChild className="w-full bg-primary/90 text-primary-foreground hover:bg-primary font-bold transition-all hover:shadow-lg hover:box-shadow-primary">
         <Link href={`/tournaments/${tournament.id}/register`}>Register Now</Link>
@@ -84,18 +69,12 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
     <Card 
       className={cn(
         "w-full max-w-sm bg-card/80 backdrop-blur-sm border-border/50 overflow-hidden transform transition-all duration-300 flex flex-col h-full",
-        !isUpcomingAndLocked && "hover:scale-105 hover:-translate-y-2 hover:shadow-lg hover:shadow-primary/20 hover:border-primary/50"
+        "hover:scale-105 hover:-translate-y-2 hover:shadow-lg hover:shadow-primary/20 hover:border-primary/50"
       )} 
       style={{ transformStyle: 'preserve-3d' }}
     >
       
-      <div 
-        onClick={handleCardClick}
-        className={cn(
-            "flex flex-col flex-grow", 
-            isUpcomingAndLocked ? 'cursor-not-allowed' : 'cursor-pointer'
-        )}
-      >
+      <Link href={`/tournaments/${tournament.id}`} className="flex flex-col flex-grow cursor-pointer">
         <CardHeader className="p-4">
           <div className="flex justify-between items-start">
               <CardTitle className="font-headline text-lg tracking-wide">{tournament.title}</CardTitle>
@@ -138,7 +117,7 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
               <Progress value={slotsPercentage} className="h-2 bg-primary/20" indicatorClassName="bg-primary" />
           </div>
         </CardContent>
-      </div>
+      </Link>
       
       <CardFooter className="p-4 mt-auto">
         {getButton()}
