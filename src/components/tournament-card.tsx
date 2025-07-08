@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from 'next/link';
@@ -68,9 +69,9 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
             <Image
               src={tournament.game === 'PUBG' ? '/icons/bgmi-icon.png' : '/icons/ff-icon.png'}
               alt={tournament.game}
-              width={40}
-              height={40}
-              className="w-10 h-10 rounded-md"
+              width={48}
+              height={48}
+              className="w-12 h-12 rounded-md"
             />
         </div>
         <div className="flex items-center gap-2">
