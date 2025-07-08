@@ -12,24 +12,33 @@ import { Users, Calendar, Trophy, Coins, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { isFuture, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
 
 type TournamentCardProps = {
   tournament: Tournament;
 };
 
 export function TournamentCard({ tournament }: TournamentCardProps) {
+  const router = useRouter();
+  const { toast } = useToast();
+
   const slotsAllotted = tournament.slotsAllotted || 0;
   const slotsPercentage = (slotsAllotted / tournament.slotsTotal) * 100;
   const slotsLeft = tournament.slotsTotal - slotsAllotted;
 
-  // Check if the tournament is upcoming and its start date is in the future.
   const isUpcomingAndLocked = tournament.status === 'Upcoming' && tournament.startDate && isFuture(parseISO(tournament.startDate));
 
-  // Determine the wrapper component and its props based on the condition.
-  const WrapperComponent = isUpcomingAndLocked ? 'div' : Link;
-  const wrapperProps = isUpcomingAndLocked 
-    ? { className: "flex flex-col flex-grow cursor-not-allowed" } 
-    : { href: `/tournaments/${tournament.id}`, className: "flex flex-col flex-grow" };
+  const handleCardClick = () => {
+    if (isUpcomingAndLocked) {
+      toast({
+        title: "Tournament Locked",
+        description: `This tournament is scheduled to start on ${tournament.startDate}. Registrations are not open yet.`,
+      });
+    } else {
+      router.push(`/tournaments/${tournament.id}`);
+    }
+  };
 
   return (
     <Card 
@@ -40,7 +49,13 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
       style={{ transformStyle: 'preserve-3d' }}
     >
       
-      <WrapperComponent {...wrapperProps}>
+      <div 
+        onClick={handleCardClick}
+        className={cn(
+            "flex flex-col flex-grow", 
+            isUpcomingAndLocked ? 'cursor-not-allowed' : 'cursor-pointer'
+        )}
+      >
         <CardHeader className="p-4">
           <div className="flex justify-between items-start">
               <CardTitle className="font-headline text-lg tracking-wide">{tournament.title}</CardTitle>
@@ -83,10 +98,10 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
               <Progress value={slotsPercentage} className="h-2 bg-primary/20" indicatorClassName="bg-primary" />
           </div>
         </CardContent>
-      </WrapperComponent>
+      </div>
       
       <CardFooter className="p-4 mt-auto">
-        {tournament.status === 'Upcoming' ? (
+        {isUpcomingAndLocked ? (
              <Button disabled className="w-full font-bold" variant="secondary">
                 <Calendar className="w-4 h-4 mr-2" />
                 Starts on {tournament.startDate || tournament.date}
