@@ -61,7 +61,7 @@ export default function TournamentsPage() {
               </h1>
               <p className="text-lg text-muted-foreground mt-2">Find your next challenge and claim victory.</p>
             </div>
-            <Tabs defaultValue="upcoming" className="w-full">
+            <Tabs defaultValue="ongoing" className="w-full">
               <TabsList className="grid w-full grid-cols-2 md:w-1/2 mx-auto bg-card/80">
                 <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
                 <TabsTrigger value="ongoing">Ongoing</TabsTrigger>
