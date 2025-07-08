@@ -24,38 +24,46 @@ export function UserProfile() {
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
     useEffect(() => {
-        const fetchUserData = async (uid: string) => {
-            const docRef = doc(db, 'users', uid);
-            const docSnap = await getDoc(docRef);
-            if (docSnap.exists()) {
-                setProfile(docSnap.data() as UserProfileData);
-            } else {
-                console.log("No such user profile!");
-            }
-        };
-
-        const fetchRegistrations = async (uid: string) => {
-            const q = query(collection(db, 'registrations'), where('userId', '==', uid));
-            const querySnapshot = await getDocs(q);
-            const userRegistrations = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as UserRegistration[];
-            userRegistrations.sort((a, b) => a.registeredAt && b.registeredAt ? b.registeredAt.toMillis() - a.registeredAt.toMillis() : 0);
-            setRegistrations(userRegistrations);
-        };
-
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
                 setAuthUser(user);
-                await fetchUserData(user.uid);
-                await fetchRegistrations(user.uid);
+                setIsLoading(true);
+                try {
+                    // Fetch user profile
+                    const userDocRef = doc(db, 'users', user.uid);
+                    const userDocSnap = await getDoc(userDocRef);
+                    if (userDocSnap.exists()) {
+                        setProfile(userDocSnap.data() as UserProfileData);
+                    } else {
+                        console.log("No such user profile!");
+                        setProfile(null);
+                    }
+
+                    // Fetch user registrations
+                    const q = query(collection(db, 'registrations'), where('userId', '==', user.uid));
+                    const querySnapshot = await getDocs(q);
+                    const userRegistrations = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as UserRegistration[];
+                    userRegistrations.sort((a, b) => a.registeredAt && b.registeredAt ? b.registeredAt.toMillis() - a.registeredAt.toMillis() : 0);
+                    setRegistrations(userRegistrations);
+                } catch (error) {
+                    console.error("Error fetching user data:", error);
+                    toast({
+                        title: "Error",
+                        description: "Could not load your profile.",
+                        variant: "destructive",
+                    });
+                } finally {
+                    setIsLoading(false);
+                }
             } else {
                 setAuthUser(null);
                 setProfile(null);
                 setRegistrations([]);
+                setIsLoading(false);
             }
-            setIsLoading(false);
         });
         return () => unsubscribe();
-    }, []);
+    }, [toast]);
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
