@@ -14,21 +14,28 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// This function checks if the config values are provided.
-if (
-    !firebaseConfig.apiKey ||
-    !firebaseConfig.authDomain ||
-    !firebaseConfig.projectId ||
-    !firebaseConfig.storageBucket ||
-    !firebaseConfig.messagingSenderId ||
-    !firebaseConfig.appId
-) {
+// This function checks if the config values are provided and are not placeholders.
+const isConfigValid = (config: typeof firebaseConfig) => {
+    return Object.values(config).every(value => {
+        if (!value || typeof value !== 'string' || value.length === 0) {
+            return false;
+        }
+        // Check for common placeholder patterns
+        if (value.startsWith('<') || value.includes('...') || value.includes('YOUR_')) {
+            return false;
+        }
+        return true;
+    });
+};
+
+if (!isConfigValid(firebaseConfig)) {
     throw new Error(`
     ********************************************************************************
-    * FIREBASE IS NOT CONFIGURED
+    * FIREBASE IS NOT CONFIGURED OR CONTAINS PLACEHOLDER VALUES
     *
     * Please add your Firebase project configuration to the .env file.
     * You can find these values in your Firebase project settings.
+    * Do not use placeholder values like "<YOUR_API_KEY>".
     * The application cannot start without a valid Firebase configuration.
     ********************************************************************************
     `);
