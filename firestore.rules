@@ -2,79 +2,50 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper function to check if the user is the admin
-    function isAdmin() {
-      return request.auth.uid == 'ymwd0rW1wnNZkYlUR7cUi9dkd452';
-    }
-
-    // Users: Can read their own profile, anyone can read public profiles.
-    // Users can only create and update their own profile.
-    match /users/{userId} {
-      allow read: if true;
-      allow create, update: if request.auth.uid == userId || isAdmin();
-      allow delete: if isAdmin();
-    }
     
-    // Tournaments: Publicly readable, only admin can write.
+    // Publicly readable collections
     match /tournaments/{tournamentId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if request.auth != null && request.auth.uid == 'ymwd0rW1wnNZkYlUR7cUi9dkd452'; // Admin only
     }
     
-    // Registrations: Users can create their own.
-    match /registrations/{registrationId} {
-      allow create: if request.auth != null;
-      allow delete: if isAdmin();
-      
-      // Admin can read/update all registrations
-      allow read, update: if isAdmin();
-      
-      // Users can read/update their own registrations. This is required for queries to work.
-      allow read, update: if request.auth.uid == resource.data.userId;
-    }
-
-    // Inquiries: Logged-in users can create. Only admin can read/update.
-    match /inquiries/{inquiryId} {
-      allow create: if request.auth != null;
-      allow read, update, delete: if isAdmin();
-    }
-
-    // Redeem Requests: Users can create and manage their own. Admin can manage all.
-    match /redeemRequests/{requestId} {
-      allow create: if request.auth.uid == request.resource.data.userId;
-      allow delete: if isAdmin();
-
-      // Admin can read/update all requests
-      allow read, update: if isAdmin();
-
-      // Users can read/update their own requests. This is required for queries to work.
-      allow read, update: if request.auth.uid == resource.data.userId;
-    }
-    
-    // Winners: Publicly readable, only admin can write (via transaction).
-    match /winners/{winnerId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    // Communities: Publicly readable. Members can create messages.
-    // Only creator or admin can update/delete community info.
     match /communities/{communityId} {
       allow read: if true;
-      allow create: if request.auth != null;
-      allow update: if resource.data.creatorId == request.auth.uid || isAdmin();
-      allow delete: if (resource.data.creatorId == request.auth.uid && resource.data.members <= 1) || isAdmin();
+      allow update: if request.auth != null; // Logged-in users can update (join/leave)
+      allow create: if request.auth != null; // Logged-in users can create
       
-      // Messages within a community
       match /messages/{messageId} {
-        function isMember() {
-          return get(/databases/$(database)/documents/communities/$(communityId)).data.memberIds.hasAny([request.auth.uid]);
-        }
-        
-        allow read, create: if isMember();
-        allow update, delete: if (resource.data.userId == request.auth.uid && isMember()) || isAdmin();
+        allow read: if true;
+        allow create: if request.auth != null && request.auth.uid in get(/databases/$(database)/documents/communities/$(communityId)).data.memberIds;
       }
+    }
+
+    match /users/{userId} {
+      allow read: if true;
+      allow update: if request.auth != null && request.auth.uid == userId; // User can update their own profile
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow delete: if request.auth != null && request.auth.uid == 'ymwd0rW1wnNZkYlUR7cUi9dkd452'; // Admin only
+    }
+
+    match /winners/{winnerId} {
+        allow read: if true;
+        allow write: if request.auth != null && request.auth.uid == 'ymwd0rW1wnNZkYlUR7cUi9dkd452'; // Admin only
+    }
+
+    // Authenticated writes
+    match /inquiries/{inquiryId} {
+      allow create: if true; // Anyone can submit an inquiry
+      allow read, update, delete: if request.auth != null && request.auth.uid == 'ymwd0rW1wnNZkYlUR7cUi9dkd452'; // Admin only
+    }
+
+    match /registrations/{registrationId} {
+      allow create: if request.auth != null; // Logged-in users can register
+      allow read, update, delete: if request.auth != null && request.auth.uid == 'ymwd0rW1wnNZkYlUR7cUi9dkd452'; // Admin only
+    }
+    
+    match /redeemRequests/{requestId} {
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId; // User can create their own request
+      allow read, update, delete: if request.auth != null && request.auth.uid == 'ymwd0rW1wnNZkYlUR7cUi9dkd452'; // Admin only
     }
   }
 }
