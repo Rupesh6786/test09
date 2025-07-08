@@ -66,7 +66,7 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
         <div className="flex justify-between items-start">
             <CardTitle className="font-headline text-lg tracking-wide">{tournament.title}</CardTitle>
             <Image
-              src={tournament.game === 'PUBG' ? '/icons/bgmi-icons.png' : '/icons/ff-icon.png'}
+              src={tournament.game === 'PUBG' ? '/icons/bgmi-icon.png' : '/icons/ff-icon.png'}
               alt={tournament.game}
               width={40}
               height={40}
