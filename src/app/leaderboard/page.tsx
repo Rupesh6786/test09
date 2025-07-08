@@ -21,7 +21,7 @@ import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 
 
@@ -35,7 +35,7 @@ export default function LeaderboardPage() {
       setIsLoading(true);
       try {
         const usersRef = collection(db, 'users');
-        const q = query(usersRef, orderBy('totalEarnings', 'desc'), limit(10));
+        const q = query(usersRef, where('totalEarnings', '>', 0), orderBy('totalEarnings', 'desc'), limit(10));
         const querySnapshot = await getDocs(q);
         const leaders = querySnapshot.docs.map(doc => doc.data() as UserProfileData);
         setLeaderboardData(leaders);
@@ -137,35 +137,45 @@ export default function LeaderboardPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {isLoading ? renderSkeletons(10) : leaderboardData.map((entry, index) => (
-                                <TableRow 
-                                    key={entry.uid} 
-                                    className="font-medium hover:bg-primary/10 cursor-pointer"
-                                    onClick={() => router.push(`/players/${encodeURIComponent(entry.name)}`)}
-                                >
-                                    <TableCell className="text-center">
-                                        <div className="flex justify-center items-center h-full">
-                                            {getRankIcon(index + 1)}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-lg text-foreground">
-                                          <div className="flex items-center gap-3">
-                                            <Avatar>
-                                                <AvatarImage src={entry.photoURL} alt={entry.name} />
-                                                <AvatarFallback>{entry.name.charAt(0)}</AvatarFallback>
-                                            </Avatar>
-                                            <span>{entry.name}</span>
-                                          </div>
-                                    </TableCell>
-                                    <TableCell className="text-center font-mono">{entry.totalMatches || 0}</TableCell>
-                                    <TableCell className="text-center hidden lg:table-cell font-mono">{calculateWinRate(entry.matchesWon, entry.totalMatches)}</TableCell>
-                                    <TableCell className="text-center hidden lg:table-cell font-mono">🔥 {entry.streak || 0}</TableCell>
-                                    <TableCell className="hidden xl:table-cell text-center font-mono">{entry.joinedOn ? format(entry.joinedOn.toDate(), 'MMM yyyy') : 'N/A'}</TableCell>
-                                    <TableCell className="text-right text-primary text-lg font-bold">
-                                        ₹{(entry.totalEarnings || 0).toLocaleString()}
-                                    </TableCell>
-                                </TableRow>
-                                ))}
+                                {isLoading ? (
+                                    renderSkeletons(10) 
+                                ) : leaderboardData.length > 0 ? (
+                                    leaderboardData.map((entry, index) => (
+                                    <TableRow 
+                                        key={entry.uid} 
+                                        className="font-medium hover:bg-primary/10 cursor-pointer"
+                                        onClick={() => router.push(`/players/${encodeURIComponent(entry.name)}`)}
+                                    >
+                                        <TableCell className="text-center">
+                                            <div className="flex justify-center items-center h-full">
+                                                {getRankIcon(index + 1)}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-lg text-foreground">
+                                            <div className="flex items-center gap-3">
+                                                <Avatar>
+                                                    <AvatarImage src={entry.photoURL} alt={entry.name} />
+                                                    <AvatarFallback>{entry.name.charAt(0)}</AvatarFallback>
+                                                </Avatar>
+                                                <span>{entry.name}</span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-center font-mono">{entry.totalMatches || 0}</TableCell>
+                                        <TableCell className="text-center hidden lg:table-cell font-mono">{calculateWinRate(entry.matchesWon, entry.totalMatches)}</TableCell>
+                                        <TableCell className="text-center hidden lg:table-cell font-mono">🔥 {entry.streak || 0}</TableCell>
+                                        <TableCell className="hidden xl:table-cell text-center font-mono">{entry.joinedOn ? format(entry.joinedOn.toDate(), 'MMM yyyy') : 'N/A'}</TableCell>
+                                        <TableCell className="text-right text-primary text-lg font-bold">
+                                            ₹{(entry.totalEarnings || 0).toLocaleString()}
+                                        </TableCell>
+                                    </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                                            No players with winnings yet. Be the first!
+                                        </TableCell>
+                                    </TableRow>
+                                )}
                             </TableBody>
                         </Table>
                     </CardContent>
@@ -174,47 +184,55 @@ export default function LeaderboardPage() {
 
               {/* Mobile View */}
               <div className="space-y-4 md:hidden">
-                {isLoading ? renderMobileSkeletons(10) : leaderboardData.map((entry, index) => (
-                  <Link key={entry.uid} href={`/players/${encodeURIComponent(entry.name)}`} className="block">
-                      <Card className="bg-card/80 backdrop-blur-sm border-border/50 text-left w-full active:scale-95 transition-transform duration-150">
-                        <CardContent className="p-4">
-                            <div className="flex items-center justify-between gap-4 mb-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 text-center">{getRankIcon(index + 1)}</div>
-                                    <Avatar className="h-12 w-12 border-2 border-accent">
-                                        <AvatarImage src={entry.photoURL} alt={entry.name} />
-                                        <AvatarFallback className="text-xl">{entry.name.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                    <div>
-                                    <p className="text-lg font-bold text-foreground">{entry.name}</p>
-                                    <p className="text-sm text-muted-foreground font-mono">{entry.teamName}</p>
+                {isLoading ? (
+                    renderMobileSkeletons(10)
+                ) : leaderboardData.length > 0 ? (
+                    leaderboardData.map((entry, index) => (
+                        <Link key={entry.uid} href={`/players/${encodeURIComponent(entry.name)}`} className="block">
+                            <Card className="bg-card/80 backdrop-blur-sm border-border/50 text-left w-full active:scale-95 transition-transform duration-150">
+                                <CardContent className="p-4">
+                                    <div className="flex items-center justify-between gap-4 mb-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 text-center">{getRankIcon(index + 1)}</div>
+                                            <Avatar className="h-12 w-12 border-2 border-accent">
+                                                <AvatarImage src={entry.photoURL} alt={entry.name} />
+                                                <AvatarFallback className="text-xl">{entry.name.charAt(0)}</AvatarFallback>
+                                            </Avatar>
+                                            <div>
+                                            <p className="text-lg font-bold text-foreground">{entry.name}</p>
+                                            <p className="text-sm text-muted-foreground font-mono">{entry.teamName}</p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right flex-shrink-0">
+                                            <p className="text-primary text-lg font-bold">₹{(entry.totalEarnings || 0).toLocaleString()}</p>
+                                            <p className="text-xs text-muted-foreground">Winnings</p>
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="text-right flex-shrink-0">
-                                    <p className="text-primary text-lg font-bold">₹{(entry.totalEarnings || 0).toLocaleString()}</p>
-                                    <p className="text-xs text-muted-foreground">Winnings</p>
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-3 gap-2 text-center border-t border-border/50 pt-4">
-                                <div>
-                                    <p className="font-bold text-foreground">{entry.totalMatches || 0}</p>
-                                    <p className="text-xs text-muted-foreground">Games</p>
-                                </div>
-                                <div>
-                                    <p className="font-bold text-foreground flex items-center justify-center gap-1">
-                                        <Flame className="w-4 h-4 text-destructive"/> {entry.streak || 0}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">Streak</p>
-                                </div>
-                                <div>
-                                    <p className="font-bold text-foreground">{calculateWinRate(entry.matchesWon, entry.totalMatches)}</p>
-                                    <p className="text-xs text-muted-foreground">Win Rate</p>
-                                </div>
-                            </div>
-                        </CardContent>
-                      </Card>
-                  </Link>
-                ))}
+                                    <div className="grid grid-cols-3 gap-2 text-center border-t border-border/50 pt-4">
+                                        <div>
+                                            <p className="font-bold text-foreground">{entry.totalMatches || 0}</p>
+                                            <p className="text-xs text-muted-foreground">Games</p>
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-foreground flex items-center justify-center gap-1">
+                                                <Flame className="w-4 h-4 text-destructive"/> {entry.streak || 0}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">Streak</p>
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-foreground">{calculateWinRate(entry.matchesWon, entry.totalMatches)}</p>
+                                            <p className="text-xs text-muted-foreground">Win Rate</p>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </Link>
+                    ))
+                ) : (
+                    <div className="text-center py-12">
+                        <p className="text-muted-foreground">No players with winnings yet.</p>
+                    </div>
+                )}
               </div>
 
             </div>
