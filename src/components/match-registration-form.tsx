@@ -25,8 +25,8 @@ import { useRouter } from 'next/navigation';
 const createRegistrationSchema = (teamType: 'Solo' | 'Duo' | 'Squad') => {
     const gameIdSchema = z.string()
         .regex(/^[0-9]+$/, "Game UID must be numeric.")
-        .min(8, 'Game UID must be 8-10 digits.')
-        .max(10, 'Game UID must be 8-10 digits.');
+        .min(8, 'Game UID must be 8-12 digits.')
+        .max(12, 'Game UID must be 8-12 digits.');
 
     let schemaDefinition: any = {
         teamName: z.string().min(2, 'Please enter your team name'),

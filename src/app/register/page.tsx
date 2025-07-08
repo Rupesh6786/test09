@@ -19,8 +19,8 @@ import { Loader2 } from 'lucide-react';
 
 const gameIdSchema = z.string()
     .regex(/^[0-9]+$/, "Game UID must be numeric.")
-    .min(8, 'Game UID must be 8-10 digits.')
-    .max(10, 'Game UID must be 8-10 digits.');
+    .min(8, 'Game UID must be 8-12 digits.')
+    .max(12, 'Game UID must be 8-12 digits.');
 
 const registerSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
