@@ -28,9 +28,12 @@ import { useToast } from '@/hooks/use-toast';
 import { Search, PlusCircle, Edit, Trash2, Award, Loader2 } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, doc, addDoc, updateDoc, deleteDoc, query, orderBy, runTransaction, where, limit, increment } from 'firebase/firestore';
-import type { Tournament } from '@/lib/data';
+import type { Tournament, BracketTeam, BracketRound, BracketMatchup } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
 
 
 export default function ManageMatchesPage() {
@@ -39,10 +42,10 @@ export default function ManageMatchesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [gameFilter, setGameFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isMatchFormOpen, setIsMatchFormOpen] = useState(false);
   const [editingTournament, setEditingTournament] = useState<Tournament | null>(null);
-  const [isWinnerDialogOpen, setIsWinnerDialogOpen] = useState(false);
-  const [selectedTournamentForWinner, setSelectedTournamentForWinner] = useState<Tournament | null>(null);
+  const [isBracketManagerOpen, setIsBracketManagerOpen] = useState(false);
+  const [selectedTournamentForBracket, setSelectedTournamentForBracket] = useState<Tournament | null>(null);
 
   const { toast } = useToast();
 
@@ -78,12 +81,12 @@ export default function ManageMatchesPage() {
 
   const handleAddNew = () => {
     setEditingTournament(null);
-    setIsDialogOpen(true);
+    setIsMatchFormOpen(true);
   };
 
   const handleEdit = (tournament: Tournament) => {
     setEditingTournament(tournament);
-    setIsDialogOpen(true);
+    setIsMatchFormOpen(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -98,9 +101,9 @@ export default function ManageMatchesPage() {
     }
   };
 
-  const handleAnnounce = (tournament: Tournament) => {
-    setSelectedTournamentForWinner(tournament);
-    setIsWinnerDialogOpen(true);
+  const handleManageBracket = (tournament: Tournament) => {
+    setSelectedTournamentForBracket(tournament);
+    setIsBracketManagerOpen(true);
   }
 
   const handleSaveMatch = async (tournamentData: Partial<Tournament>) => {
@@ -114,7 +117,7 @@ export default function ManageMatchesPage() {
             toast({ title: "Success", description: "New match created." });
         }
         fetchTournaments(); // Refresh list
-        setIsDialogOpen(false);
+        setIsMatchFormOpen(false);
         setEditingTournament(null);
     } catch (error) {
         console.error("Error saving match: ", error);
@@ -122,7 +125,13 @@ export default function ManageMatchesPage() {
     }
   };
 
-  const handleSaveWinner = async (tournament: Tournament, winningTeam: { teamName: string; gameIds: string[] }) => {
+  const handleBracketUpdate = async (tournamentId: string, newBracket: BracketRound[]) => {
+    const docRef = doc(db, "tournaments", tournamentId);
+    await updateDoc(docRef, { bracket: newBracket });
+    await fetchTournaments();
+  };
+
+  const handleFinalWinner = async (tournament: Tournament, winningTeam: BracketTeam) => {
     try {
         const registrationsRef = collection(db, 'registrations');
         const q = query(registrationsRef, where('tournamentId', '==', tournament.id), where('teamName', '==', winningTeam.teamName), limit(1));
@@ -177,8 +186,8 @@ export default function ManageMatchesPage() {
             description: `${winningTeam.teamName} has been awarded ₹${tournament.prizePool.toLocaleString()}.`
         });
         fetchTournaments(); // Refresh list
-        setIsWinnerDialogOpen(false);
-        setSelectedTournamentForWinner(null);
+        setIsBracketManagerOpen(false);
+        setSelectedTournamentForBracket(null);
     } catch (error: any) {
         console.error("Error announcing winner: ", error);
         toast({ title: "Error", description: error.message || "Failed to announce winner.", variant: "destructive" });
@@ -251,7 +260,7 @@ export default function ManageMatchesPage() {
                       <TableCell className="text-center"><Badge variant={getStatusBadgeVariant(tournament.status)}>{tournament.status}</Badge></TableCell>
                       <TableCell className="text-right">
                         <Button variant="ghost" size="icon" onClick={() => handleEdit(tournament)} disabled={tournament.status === 'Completed'}><Edit className="w-4 h-4" /></Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleAnnounce(tournament)} disabled={tournament.status !== 'Ongoing' || !tournament.confirmedTeams || tournament.confirmedTeams.length === 0}><Award className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleManageBracket(tournament)} disabled={tournament.status !== 'Ongoing' || !tournament.confirmedTeams || tournament.confirmedTeams.length === 0}><Award className="w-4 h-4" /></Button>
                         <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(tournament.id)}><Trash2 className="w-4 h-4" /></Button>
                       </TableCell>
                     </TableRow>
@@ -297,7 +306,7 @@ export default function ManageMatchesPage() {
                         </div>
                         <div className="flex justify-end gap-1 mt-4 pt-4 border-t border-muted-foreground/20">
                             <Button variant="ghost" size="sm" onClick={() => handleEdit(tournament)} disabled={tournament.status === 'Completed'}><Edit className="w-4 h-4 mr-2" />Edit</Button>
-                            <Button variant="ghost" size="sm" onClick={() => handleAnnounce(tournament)} disabled={tournament.status !== 'Ongoing' || !tournament.confirmedTeams || tournament.confirmedTeams.length === 0}><Award className="w-4 h-4 mr-2" />Announce</Button>
+                            <Button variant="ghost" size="sm" onClick={() => handleManageBracket(tournament)} disabled={tournament.status !== 'Ongoing' || !tournament.confirmedTeams || tournament.confirmedTeams.length === 0}><Award className="w-4 h-4 mr-2" />Manage</Button>
                             <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleDelete(tournament.id)}><Trash2 className="w-4 h-4 mr-2" />Delete</Button>
                         </div>
                     </div>
@@ -312,16 +321,17 @@ export default function ManageMatchesPage() {
       </Card>
       
       <MatchFormDialog
-        isOpen={isDialogOpen}
-        setIsOpen={setIsDialogOpen}
+        isOpen={isMatchFormOpen}
+        setIsOpen={setIsMatchFormOpen}
         onSave={handleSaveMatch}
         tournament={editingTournament}
       />
-      <WinnerAnnouncementDialog
-        isOpen={isWinnerDialogOpen}
-        setIsOpen={setIsWinnerDialogOpen}
-        tournament={selectedTournamentForWinner}
-        onConfirm={handleSaveWinner}
+      <BracketManagerDialog
+        isOpen={isBracketManagerOpen}
+        setIsOpen={setIsBracketManagerOpen}
+        tournament={selectedTournamentForBracket}
+        onBracketUpdate={handleBracketUpdate}
+        onFinalWinner={handleFinalWinner}
       />
     </div>
   );
@@ -401,15 +411,15 @@ function MatchFormDialog({ isOpen, setIsOpen, onSave, tournament }: { isOpen: bo
               </div>
               <div className="grid grid-cols-1 gap-y-2 items-center md:grid-cols-4 md:gap-x-4">
                 <Label htmlFor="entryFee" className="md:text-right">Entry Fee</Label>
-                <Input id="entryFee" type="number" value={formData.entryFee || ''} onChange={handleChange} className="md:col-span-3" disabled={isSaving} />
+                <Input id="entryFee" type="number" value={formData.entryFee || 0} onChange={handleChange} className="md:col-span-3" disabled={isSaving} />
               </div>
               <div className="grid grid-cols-1 gap-y-2 items-center md:grid-cols-4 md:gap-x-4">
                 <Label htmlFor="prizePool" className="md:text-right">Prize Pool</Label>
-                <Input id="prizePool" type="number" value={formData.prizePool || ''} onChange={handleChange} className="md:col-span-3" disabled={isSaving} />
+                <Input id="prizePool" type="number" value={formData.prizePool || 0} onChange={handleChange} className="md:col-span-3" disabled={isSaving} />
               </div>
               <div className="grid grid-cols-1 gap-y-2 items-center md:grid-cols-4 md:gap-x-4">
                 <Label htmlFor="slotsTotal" className="md:text-right">Total Slots</Label>
-                <Input id="slotsTotal" type="number" value={formData.slotsTotal || ''} onChange={handleChange} className="md:col-span-3" disabled={isSaving} />
+                <Input id="slotsTotal" type="number" value={formData.slotsTotal || 0} onChange={handleChange} className="md:col-span-3" disabled={isSaving} />
               </div>
               <div className="grid grid-cols-1 gap-y-2 items-center md:grid-cols-4 md:gap-x-4">
                  <Label className="md:text-right">Status</Label>
@@ -435,68 +445,179 @@ function MatchFormDialog({ isOpen, setIsOpen, onSave, tournament }: { isOpen: bo
     );
 }
 
-function WinnerAnnouncementDialog({ isOpen, setIsOpen, tournament, onConfirm }: { isOpen: boolean; setIsOpen: (open: boolean) => void; onConfirm: (tournament: Tournament, winningTeam: { teamName: string; gameIds: string[] }) => Promise<void>; tournament: Tournament | null }) {
-    const [selectedTeamName, setSelectedTeamName] = useState<string>('');
+const getRoundTitle = (matchupCount: number, totalSlots: number) => {
+    if (matchupCount === 1) return 'Finals';
+    if (matchupCount === 2) return 'Semi-Finals';
+    if (matchupCount === 4) return 'Quarter-Finals';
+    return `Round of ${matchupCount * 2}`;
+}
+
+const generateInitialBracket = (teams: BracketTeam[], slotsTotal: number): BracketRound[] => {
+    let rounds: BracketRound[] = [];
+    let currentTeams: (BracketTeam | null)[] = [...teams];
+    
+    // Pad with nulls if not enough teams
+    while (currentTeams.length < slotsTotal) {
+        currentTeams.push(null);
+    }
+    
+    // Shuffle teams for random matchups
+    for (let i = currentTeams.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [currentTeams[i], currentTeams[j]] = [currentTeams[j], currentTeams[i]];
+    }
+
+    let roundTeams = currentTeams;
+    while (roundTeams.length >= 2) {
+        const matchups: BracketMatchup[] = [];
+        for (let i = 0; i < roundTeams.length; i += 2) {
+            matchups.push({
+                team1: roundTeams[i],
+                team2: roundTeams[i+1],
+                winner: null
+            });
+        }
+        rounds.push({
+            title: getRoundTitle(matchups.length, slotsTotal),
+            matchups: matchups
+        });
+        roundTeams = Array(roundTeams.length / 2).fill(null);
+    }
+
+    return rounds;
+}
+
+function BracketManagerDialog({ 
+    isOpen, setIsOpen, tournament, onBracketUpdate, onFinalWinner 
+}: { 
+    isOpen: boolean; 
+    setIsOpen: (open: boolean) => void; 
+    tournament: Tournament | null;
+    onBracketUpdate: (tournamentId: string, newBracket: BracketRound[]) => Promise<void>;
+    onFinalWinner: (tournament: Tournament, winningTeam: BracketTeam) => Promise<void>;
+}) {
+    const [bracket, setBracket] = useState<BracketRound[] | undefined>(undefined);
     const [isSaving, setIsSaving] = useState(false);
+    const { toast } = useToast();
 
     useEffect(() => {
-        if (!isOpen) {
-            setSelectedTeamName('');
-            setIsSaving(false);
+        if (isOpen && tournament) {
+            if (!tournament.bracket && tournament.confirmedTeams && tournament.slotsTotal > 0 && [4, 8, 16].includes(tournament.slotsTotal)) {
+                const newBracket = generateInitialBracket(tournament.confirmedTeams, tournament.slotsTotal);
+                setBracket(newBracket);
+            } else {
+                setBracket(tournament.bracket ? JSON.parse(JSON.stringify(tournament.bracket)) : undefined);
+            }
         }
-    }, [isOpen]);
+    }, [isOpen, tournament]);
 
-    const handleSubmit = async () => {
-        if (!tournament || !selectedTeamName) {
-            toast({ title: "Error", description: "Please select a winning team.", variant: "destructive" });
-            return;
-        }
-        const winningTeam = tournament.confirmedTeams?.find(t => t.teamName === selectedTeamName);
-        if (!winningTeam) {
-            toast({ title: "Error", description: "Selected team not found.", variant: "destructive" });
-            return;
+    const handleWinnerSelect = (roundIndex: number, matchupIndex: number, winner: BracketTeam | null) => {
+        if (!bracket || !winner) return;
+
+        const newBracket = [...bracket];
+        const currentMatchup = newBracket[roundIndex].matchups[matchupIndex];
+        
+        // Prevent changing winner if it's already set and propagated
+        if(currentMatchup.winner?.teamName === winner.teamName) return;
+
+        currentMatchup.winner = winner;
+
+        // Propagate winner to the next round
+        if (roundIndex + 1 < newBracket.length) {
+            const nextRoundMatchupIndex = Math.floor(matchupIndex / 2);
+            const teamSlot = matchupIndex % 2 === 0 ? 'team1' : 'team2';
+            newBracket[roundIndex + 1].matchups[nextRoundMatchupIndex][teamSlot] = winner;
         }
 
+        setBracket(newBracket);
+    };
+    
+    const handleSaveChanges = async () => {
+        if (!tournament || !bracket) return;
         setIsSaving(true);
-        await onConfirm(tournament, winningTeam);
+        await onBracketUpdate(tournament.id, bracket);
         setIsSaving(false);
+        toast({ title: "Success", description: "Bracket progress has been saved." });
+    };
+
+    const handleDeclareFinalWinner = async () => {
+        if (!tournament || !bracket) return;
+        const finalWinner = bracket[bracket.length - 1].matchups[0].winner;
+        if (finalWinner) {
+            setIsSaving(true);
+            await onFinalWinner(tournament, finalWinner);
+            setIsSaving(false);
+        } else {
+            toast({ title: "Error", description: "Select a winner for the final match first.", variant: "destructive" });
+        }
     };
 
     if (!tournament) return null;
 
+    const finalMatchup = bracket ? bracket[bracket.length - 1].matchups[0] : null;
+    const canDeclareFinalWinner = !!finalMatchup?.winner;
+
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="max-w-4xl max-h-[90vh]">
                 <DialogHeader>
-                    <DialogTitle>Announce Winner for "{tournament.title}"</DialogTitle>
+                    <DialogTitle>Manage Bracket for "{tournament.title}"</DialogTitle>
                     <DialogDescription>
-                        Select the winning team from the list of confirmed participants. This action is irreversible and will distribute the prize pool.
+                        Select a winner for each match to advance them. Save progress periodically.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="py-4">
-                    <Label>Confirmed Teams</Label>
-                    <RadioGroup
-                        value={selectedTeamName}
-                        onValueChange={setSelectedTeamName}
-                        className="mt-2 max-h-60 overflow-y-auto pr-2"
-                        disabled={isSaving}
-                    >
-                        {(tournament.confirmedTeams && tournament.confirmedTeams.length > 0) ? tournament.confirmedTeams.map(team => (
-                            <div key={team.teamName} className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted">
-                                <RadioGroupItem value={team.teamName} id={team.teamName} />
-                                <Label htmlFor={team.teamName} className="flex-1 cursor-pointer">{team.teamName}</Label>
-                            </div>
-                        )) : (
-                            <p className="text-muted-foreground text-sm text-center py-4">No confirmed teams for this tournament.</p>
-                        )}
-                    </RadioGroup>
-                </div>
-                <DialogFooter>
-                    <DialogClose asChild><Button variant="outline" disabled={isSaving}>Cancel</Button></DialogClose>
-                    <Button onClick={handleSubmit} disabled={isSaving || !selectedTeamName}>
+                <ScrollArea className="my-4 h-[60vh]">
+                    <div className="p-1">
+                    {bracket ? (
+                        <div className="flex flex-col gap-6">
+                            {bracket.map((round, roundIndex) => (
+                                <div key={round.title}>
+                                    <h3 className="font-bold text-lg text-primary">{round.title}</h3>
+                                    <Separator className="my-2" />
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {round.matchups.map((matchup, matchupIndex) => (
+                                            <Card key={matchupIndex} className="p-4 bg-muted/50">
+                                                <RadioGroup
+                                                    value={matchup.winner?.teamName}
+                                                    onValueChange={(teamName) => {
+                                                        const winner = matchup.team1?.teamName === teamName ? matchup.team1 : matchup.team2;
+                                                        handleWinnerSelect(roundIndex, matchupIndex, winner);
+                                                    }}
+                                                    disabled={!matchup.team1 || !matchup.team2 || isSaving}
+                                                >
+                                                    <div className={cn("flex items-center space-x-2 p-2 rounded-md", { 'bg-primary/20': matchup.winner?.teamName === matchup.team1?.teamName })}>
+                                                        <RadioGroupItem value={matchup.team1?.teamName || ''} id={`r${roundIndex}m${matchupIndex}t1`} />
+                                                        <Label htmlFor={`r${roundIndex}m${matchupIndex}t1`} className="flex-1 cursor-pointer">{matchup.team1?.teamName || 'TBD'}</Label>
+                                                    </div>
+                                                    <div className="text-center text-xs font-bold text-muted-foreground">VS</div>
+                                                    <div className={cn("flex items-center space-x-2 p-2 rounded-md", { 'bg-primary/20': matchup.winner?.teamName === matchup.team2?.teamName })}>
+                                                        <RadioGroupItem value={matchup.team2?.teamName || ''} id={`r${roundIndex}m${matchupIndex}t2`} />
+                                                        <Label htmlFor={`r${roundIndex}m${matchupIndex}t2`} className="flex-1 cursor-pointer">{matchup.team2?.teamName || 'TBD'}</Label>
+                                                    </div>
+                                                </RadioGroup>
+                                            </Card>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-muted-foreground text-center py-8">
+                            This tournament does not have a generated bracket. Ensure it is "Ongoing" and has confirmed teams.
+                        </p>
+                    )}
+                    </div>
+                </ScrollArea>
+                <DialogFooter className="gap-2">
+                    <Button onClick={handleDeclareFinalWinner} disabled={!canDeclareFinalWinner || isSaving}>
                         {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Confirm Winner
+                        Declare Final Winner
                     </Button>
+                    <Button variant="secondary" onClick={handleSaveChanges} disabled={isSaving}>
+                         {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Save Progress
+                    </Button>
+                    <DialogClose asChild><Button variant="outline" disabled={isSaving}>Close</Button></DialogClose>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

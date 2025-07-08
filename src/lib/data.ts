@@ -1,6 +1,22 @@
 
 import type { Timestamp } from "firebase/firestore";
 
+export type BracketTeam = {
+  teamName: string;
+  gameIds: string[];
+};
+
+export type BracketMatchup = {
+  team1: BracketTeam | null;
+  team2: BracketTeam | null;
+  winner: BracketTeam | null;
+};
+
+export type BracketRound = {
+  title: string;
+  matchups: BracketMatchup[];
+};
+
 export type Tournament = {
   id: string;
   title: string;
@@ -15,8 +31,9 @@ export type Tournament = {
   slotsAllotted: number;
   status: 'Upcoming' | 'Ongoing' | 'Completed';
   rules: string[];
-  confirmedTeams?: { teamName: string; gameIds: string[] }[];
+  confirmedTeams?: BracketTeam[];
   winner?: { userId: string; teamName: string; prizeMoney: number };
+  bracket?: BracketRound[];
 };
 
 export type Testimonial = {

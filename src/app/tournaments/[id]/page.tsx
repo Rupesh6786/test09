@@ -9,15 +9,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import type { Tournament } from '@/lib/data';
 import { Loader2, Calendar, Trophy, Coins, Users, ShieldCheck, Gamepad2, User } from 'lucide-react';
 import { TournamentBracket } from '@/components/tournament-bracket';
 import { Separator } from '@/components/ui/separator';
-
-type Team = {
-  name: string;
-};
 
 export default function TournamentDetailPage() {
   const params = useParams<{ id: string }>();
@@ -30,31 +26,28 @@ export default function TournamentDetailPage() {
       setIsLoading(false);
       return;
     }
-
-    const fetchTournamentData = async () => {
-      setIsLoading(true);
-      try {
-        // Fetch tournament details
-        const tournamentRef = doc(db, 'tournaments', tournamentId);
-        const tournamentSnap = await getDoc(tournamentRef);
-
-        if (!tournamentSnap.exists()) {
-          setTournament(null);
-          return;
-        }
-        const tournamentData = { id: tournamentSnap.id, ...tournamentSnap.data() } as Tournament;
+    
+    setIsLoading(true);
+    const tournamentRef = doc(db, 'tournaments', tournamentId);
+    
+    const unsubscribe = onSnapshot(tournamentRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const tournamentData = { id: docSnap.id, ...docSnap.data() } as Tournament;
         setTournament(tournamentData);
-
-      } catch (error) {
-        console.error("Error fetching tournament data: ", error);
+      } else {
+        console.error("Tournament not found!");
         setTournament(null);
-      } finally {
-        setIsLoading(false);
       }
-    };
+      setIsLoading(false);
+    }, (error) => {
+      console.error("Error fetching tournament data: ", error);
+      setTournament(null);
+      setIsLoading(false);
+    });
 
-    fetchTournamentData();
+    return () => unsubscribe(); // Cleanup listener on component unmount
   }, [tournamentId]);
+
 
   if (isLoading) {
     return (
@@ -71,8 +64,6 @@ export default function TournamentDetailPage() {
   if (!tournament) {
     return notFound();
   }
-  
-  const confirmedTeams = tournament.confirmedTeams?.map(t => ({ name: t.teamName })) || [];
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -91,7 +82,7 @@ export default function TournamentDetailPage() {
             {/* Left Column: Bracket */}
             <div className="lg:col-span-2">
               <h2 className="text-2xl font-headline text-accent mb-4">Live Bracket</h2>
-              <TournamentBracket teams={confirmedTeams} prizePool={tournament.prizePool} slotsTotal={tournament.slotsTotal} />
+              <TournamentBracket tournament={tournament} />
             </div>
 
             {/* Right Column: Details */}
