@@ -83,75 +83,10 @@ function Round({ round, isLastRound }: { round: BracketRound; isLastRound: boole
   );
 }
 
-
-const getRoundTitle = (matchupCount: number) => {
-    if (matchupCount === 1) return 'Finals';
-    if (matchupCount === 2) return 'Semi-Finals';
-    if (matchupCount === 4) return 'Quarter-Finals';
-    if (matchupCount === 8) return 'Round of 16';
-    return `Round of ${matchupCount * 2}`;
-};
-
-const generatePlaceholderBracket = (teams: BracketTeam[], slotsTotal: number): BracketRound[] => {
-    if (!slotsTotal) {
-        return [];
-    }
-    
-    let rounds: BracketRound[] = [];
-    let currentTeams: (BracketTeam | null)[] = [...(teams || [])];
-
-    const validSlots = [2, 4, 8, 16, 32];
-    if (!validSlots.includes(slotsTotal)) {
-        return [];
-    }
-
-    while (currentTeams.length < slotsTotal) {
-        currentTeams.push(null);
-    }
-
-    let firstRoundMatchups: BracketMatchup[] = [];
-    for (let i = 0; i < currentTeams.length; i += 2) {
-        firstRoundMatchups.push({
-            team1: currentTeams[i],
-            team2: currentTeams[i+1],
-            winner: null
-        });
-    }
-    rounds.push({
-        title: getRoundTitle(firstRoundMatchups.length),
-        matchups: firstRoundMatchups
-    });
-
-    let numberOfMatchups = firstRoundMatchups.length / 2;
-    while (numberOfMatchups >= 1) {
-        const matchups: BracketMatchup[] = [];
-        for (let i = 0; i < numberOfMatchups; i++) {
-            matchups.push({
-                team1: null,
-                team2: null,
-                winner: null
-            });
-        }
-        rounds.push({
-            title: getRoundTitle(matchups.length),
-            matchups: matchups
-        });
-        numberOfMatchups /= 2;
-    }
-
-    return rounds;
-};
-
-
 export function TournamentBracket({ tournament }: { tournament: Tournament }) {
-  const { status } = tournament;
-
-  const displayBracket = React.useMemo(() => {
-    if (tournament.bracket && tournament.bracket.length > 0) {
-      return tournament.bracket;
-    }
-    return generatePlaceholderBracket(tournament.confirmedTeams || [], tournament.slotsTotal);
-  }, [tournament.bracket, tournament.confirmedTeams, tournament.slotsTotal]);
+  // The bracket data now comes directly from the tournament object,
+  // which is populated from Firestore.
+  const displayBracket = tournament.bracket;
 
   if (!displayBracket || displayBracket.length === 0) {
     return (

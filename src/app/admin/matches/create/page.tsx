@@ -27,7 +27,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Search, PlusCircle, Edit, Trash2, Award, Loader2, Shuffle } from 'lucide-react';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, addDoc, updateDoc, deleteDoc, query, orderBy, runTransaction, where, limit, increment, arrayRemove } from 'firebase/firestore';
+import { collection, getDocs, doc, addDoc, updateDoc, deleteDoc, query, orderBy, runTransaction, where, limit, increment, arrayRemove, getDoc } from 'firebase/firestore';
 import type { Tournament, BracketTeam, BracketRound, BracketMatchup } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -113,8 +113,30 @@ export default function ManageMatchesPage() {
     }
   };
 
-  const handleManageBracket = (tournament: Tournament) => {
-    setSelectedTournamentForBracket(tournament);
+  const handleManageBracket = async (tournament: Tournament) => {
+    let tournamentToOpen = tournament;
+
+    // If bracket doesn't exist and conditions are met, generate and save it first.
+    if ((!tournament.bracket || tournament.bracket.length === 0) && tournament.confirmedTeams && tournament.slotsTotal > 0 && [2, 4, 8, 16, 32].includes(tournament.slotsTotal)) {
+        toast({ title: "Generating Bracket...", description: "Please wait a moment." });
+        const newBracket = generateInitialBracket(tournament.confirmedTeams, tournament.slotsTotal);
+        const docRef = doc(db, "tournaments", tournament.id);
+        
+        try {
+            await updateDoc(docRef, { bracket: newBracket });
+            const updatedDoc = await getDoc(docRef);
+            if (updatedDoc.exists()) {
+                tournamentToOpen = { id: updatedDoc.id, ...updatedDoc.data() } as Tournament;
+                toast({ title: "Success", description: "Bracket generated and saved." });
+            }
+        } catch (error) {
+            console.error("Error generating bracket:", error);
+            toast({ title: "Error", description: "Could not generate the bracket.", variant: "destructive" });
+            return; // Don't open the dialog if generation fails
+        }
+    }
+
+    setSelectedTournamentForBracket(tournamentToOpen);
     setIsBracketManagerOpen(true);
   }
 
@@ -217,6 +239,7 @@ export default function ManageMatchesPage() {
 
         const docRef = doc(db, "tournaments", tournamentId);
         try {
+            // This now directly regenerates the bracket and saves it.
             const resetBracket = generateInitialBracket(tournamentToReset.confirmedTeams, tournamentToReset.slotsTotal);
             await updateDoc(docRef, { bracket: resetBracket });
             toast({ title: "Success", description: "Bracket progress has been reset." });
@@ -588,11 +611,10 @@ function BracketManagerDialog({
 
     useEffect(() => {
         if (isOpen && tournament) {
-            if ((!tournament.bracket || tournament.bracket.length === 0) && tournament.confirmedTeams && tournament.slotsTotal > 0 && [2, 4, 8, 16, 32].includes(tournament.slotsTotal)) {
-                const newBracket = generateInitialBracket(tournament.confirmedTeams, tournament.slotsTotal);
-                setBracket(newBracket);
+            if (tournament.bracket) {
+                setBracket(JSON.parse(JSON.stringify(tournament.bracket)));
             } else {
-                setBracket(tournament.bracket ? JSON.parse(JSON.stringify(tournament.bracket)) : undefined);
+                setBracket(undefined);
             }
         }
     }, [isOpen, tournament]);
