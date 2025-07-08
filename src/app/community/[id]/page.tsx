@@ -199,9 +199,9 @@ export default function CommunityDetailPage() {
             {/* Community Header */}
             <Card className="mb-6 bg-card/80 backdrop-blur-sm">
                 <CardContent className="p-6 flex flex-col md:flex-row items-center gap-6">
-                    <Avatar className="h-24 w-24 border-4 border-primary">
+                    <Avatar className="h-24 w-24 border-4 border-primary rounded-md">
                         <AvatarImage src={community.avatar} alt={community.name} />
-                        <AvatarFallback className="text-4xl">{community.name.charAt(0)}</AvatarFallback>
+                        <AvatarFallback className="text-4xl rounded-md">{community.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div className="flex-grow text-center md:text-left">
                         <h1 className="font-headline text-3xl md:text-4xl font-bold text-primary">{community.name}</h1>

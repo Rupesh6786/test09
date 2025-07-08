@@ -12,9 +12,9 @@ export function CommunityCard({ community }: { community: Community }) {
         <Link href={`/community/${community.id}`} className="group block h-full">
             <Card className="h-full text-center p-6 bg-card/80 backdrop-blur-sm border-border/50 hover:border-primary/50 transition-all duration-300 hover:scale-105 flex flex-col items-center justify-between gap-4">
                 <div className="flex flex-col items-center gap-4">
-                    <Avatar className="h-24 w-24 border-2 border-accent">
+                    <Avatar className="h-24 w-24 border-2 border-accent rounded-md">
                         <AvatarImage src={community.avatar} alt={community.name} />
-                        <AvatarFallback className="text-4xl bg-muted">
+                        <AvatarFallback className="text-4xl bg-muted rounded-md">
                             {community.avatar ? community.name.charAt(0) : <Users className="w-12 h-12 text-muted-foreground" />}
                         </AvatarFallback>
                     </Avatar>
