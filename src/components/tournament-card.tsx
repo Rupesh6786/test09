@@ -37,17 +37,7 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
 
 
   const getButton = () => {
-    // Highest priority: if slots are full.
-    if (isFull) {
-      return (
-        <Button disabled className="w-full font-bold">
-          <Users className="w-4 h-4 mr-2" />
-          Slots Full
-        </Button>
-      );
-    }
-
-    // Next priority: if registration deadline has passed.
+    // Highest priority: if registration deadline has passed.
     if (registrationHasEnded) {
        return (
         <Button disabled className="w-full font-bold">
@@ -57,6 +47,16 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
       );
     }
 
+    // Next priority: if slots are full.
+    if (isFull) {
+      return (
+        <Button disabled className="w-full font-bold">
+          <Users className="w-4 h-4 mr-2" />
+          Slots Full
+        </Button>
+      );
+    }
+    
     // Default case: Registration is open.
     return (
       <Button asChild className="w-full bg-primary/90 text-primary-foreground hover:bg-primary font-bold transition-all hover:shadow-lg hover:box-shadow-primary">
