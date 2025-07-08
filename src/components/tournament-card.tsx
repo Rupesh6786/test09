@@ -10,7 +10,6 @@ import { PubgIcon } from '@/components/icons/pubg-icon';
 import { FreeFireIcon } from '@/components/icons/freefire-icon';
 import { Users, Calendar, Trophy, Coins, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { isFuture, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
@@ -26,8 +25,21 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
   const slotsAllotted = tournament.slotsAllotted || 0;
   const slotsPercentage = (slotsAllotted / tournament.slotsTotal) * 100;
   const slotsLeft = tournament.slotsTotal - slotsAllotted;
+  const isFull = slotsLeft <= 0;
 
-  const isUpcomingAndLocked = tournament.status === 'Upcoming' && tournament.startDate && isFuture(parseISO(tournament.startDate));
+  // This is a more robust way to check if the tournament is locked.
+  // It avoids potential timezone issues by comparing date strings directly.
+  let isUpcomingAndLocked = false;
+  if (tournament.status === 'Upcoming' && tournament.startDate) {
+    try {
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+      if (tournament.startDate > today) {
+        isUpcomingAndLocked = true;
+      }
+    } catch (e) {
+        console.error("Date comparison failed", e)
+    }
+  }
 
   const handleCardClick = () => {
     if (isUpcomingAndLocked) {
@@ -38,6 +50,32 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
     } else {
       router.push(`/tournaments/${tournament.id}`);
     }
+  };
+
+  const getButton = () => {
+    if (isUpcomingAndLocked) {
+      return (
+        <Button disabled className="w-full font-bold">
+          <Calendar className="w-4 h-4 mr-2" />
+          Starts on {tournament.startDate}
+        </Button>
+      );
+    }
+    
+    if (isFull && tournament.status === 'Upcoming') {
+        return (
+            <Button disabled className="w-full font-bold">
+                <Users className="w-4 h-4 mr-2" />
+                Slots Full
+            </Button>
+        );
+    }
+    
+    return (
+      <Button asChild className="w-full bg-primary/90 text-primary-foreground hover:bg-primary font-bold transition-all hover:shadow-lg hover:box-shadow-primary">
+        <Link href={`/tournaments/${tournament.id}/register`}>Register Now</Link>
+      </Button>
+    );
   };
 
   return (
@@ -101,16 +139,7 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
       </div>
       
       <CardFooter className="p-4 mt-auto">
-        {isUpcomingAndLocked ? (
-             <Button disabled className="w-full font-bold">
-                <Calendar className="w-4 h-4 mr-2" />
-                Starts on {tournament.startDate}
-            </Button>
-        ) : (
-            <Button asChild className="w-full bg-primary/90 text-primary-foreground hover:bg-primary font-bold transition-all hover:shadow-lg hover:box-shadow-primary">
-                <Link href={`/tournaments/${tournament.id}/register`}>Register Now</Link>
-            </Button>
-        )}
+        {getButton()}
       </CardFooter>
     </Card>
   );
