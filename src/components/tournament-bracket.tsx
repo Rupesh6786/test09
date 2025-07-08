@@ -48,31 +48,33 @@ function WinnerDisplay({ tournament }: { tournament: Tournament }) {
     );
 }
 
-// A single round of the tournament bracket
+// A single round of the tournament bracket, including connectors to the next round
 function Round({ round, isLastRound }: { round: BracketRound; isLastRound: boolean; }) {
   return (
-    <div className="flex items-center">
-      <div className="flex flex-col items-center gap-8">
-        <h3 className="font-headline text-lg md:text-xl text-accent font-bold">{round.title}</h3>
-        <div className="flex flex-col gap-6 md:gap-10">
+    <div className="flex items-stretch">
+      {/* Column for matchups */}
+      <div className="flex flex-col justify-around gap-8">
+        <h3 className="font-headline text-lg md:text-xl text-accent font-bold text-center">{round.title}</h3>
+        <div className="flex flex-col justify-around flex-grow gap-6 md:gap-10">
           {round.matchups.map((matchup, index) => (
-            <div key={index} className="relative flex items-center">
-              <Matchup matchup={matchup} />
-              {/* Desktop Connector Line */}
-              {!isLastRound && (
-                <div className="hidden md:block absolute left-full top-1/2 w-4 md:w-8 h-px bg-border" />
-              )}
-            </div>
+            <Matchup key={index} matchup={matchup} />
           ))}
         </div>
       </div>
-      {/* Desktop Vertical Connector */}
+      
+      {/* Column for connectors (desktop only) */}
       {!isLastRound && (
-         <div className="hidden md:flex flex-col items-center h-full w-8 md:w-16 ml-0">
+        <div className="hidden md:flex flex-col justify-around w-8 md:w-16">
           {Array.from({ length: round.matchups.length / 2 }).map((_, index) => (
-            <div key={index} className="relative flex-grow flex items-center">
-                 <div className="absolute w-px h-full bg-border" style={{ height: `calc(100% + 2.5rem)`}} />
-                 <div className="absolute w-full h-px bg-border" />
+            <div key={index} className="relative flex-grow">
+              {/* Top horizontal line from previous matchup */}
+              <div className="absolute left-0 w-1/2 h-px bg-border" style={{ top: '25%' }} />
+              {/* Bottom horizontal line from previous matchup */}
+              <div className="absolute left-0 w-1/2 h-px bg-border" style={{ bottom: '25%' }} />
+              {/* Vertical line connecting the two horizontal lines */}
+              <div className="absolute left-1/2 w-px bg-border" style={{ top: '25%', bottom: '25%' }} />
+              {/* Outgoing horizontal line to next round */}
+              <div className="absolute right-0 w-1/2 h-px bg-border top-1/2" />
             </div>
           ))}
         </div>
@@ -170,7 +172,7 @@ export function TournamentBracket({ tournament }: { tournament: Tournament }) {
 
       {/* Desktop View */}
       <div className="hidden md:flex w-full overflow-x-auto pb-4 justify-center">
-          <div className="flex items-start min-w-max mx-auto">
+          <div className="flex items-center min-w-max mx-auto">
               {displayBracket.map((round, index) => (
                   <Round key={round.title} round={round} isLastRound={index === displayBracket.length - 1} />
               ))}
