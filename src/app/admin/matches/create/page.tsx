@@ -196,23 +196,31 @@ export default function ManageMatchesPage() {
   
   const handleResetBracket = async (tournamentId: string) => {
     if (!window.confirm("Are you sure you want to reset this bracket? This will clear all match results and cannot be undone.")) return;
-    
+
+    const tournamentToReset = tournaments.find(t => t.id === tournamentId);
+    if (!tournamentToReset || !tournamentToReset.confirmedTeams) {
+        toast({
+            title: "Error",
+            description: "Cannot reset bracket. Tournament data or confirmed teams are missing.",
+            variant: "destructive"
+        });
+        return;
+    }
+
     const docRef = doc(db, "tournaments", tournamentId);
     try {
-        await updateDoc(docRef, { bracket: null }); // Using null to trigger regeneration
-        toast({ title: "Success", description: "The bracket has been reset." });
-        
-        // Refresh the main tournament list
-        await fetchTournaments();
+        const regeneratedBracket = generateInitialBracket(tournamentToReset.confirmedTeams, tournamentToReset.slotsTotal);
+        await updateDoc(docRef, { bracket: regeneratedBracket });
+        toast({ title: "Success", description: "The bracket has been reset and updated." });
 
-        // Close the dialog
-        setIsBracketManagerOpen(false);
-        setSelectedTournamentForBracket(null);
+        // This fetch will update the tournament prop for the dialog, causing it to re-render with the new data.
+        await fetchTournaments();
     } catch (error) {
         console.error("Error resetting bracket: ", error);
         toast({ title: "Error", description: "Could not reset the bracket.", variant: "destructive" });
     }
   };
+
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
@@ -524,7 +532,7 @@ function BracketManagerDialog({
 
     useEffect(() => {
         if (isOpen && tournament) {
-            if (!tournament.bracket && tournament.confirmedTeams && tournament.slotsTotal > 0 && [4, 8, 16].includes(tournament.slotsTotal)) {
+            if (!tournament.bracket && tournament.confirmedTeams && tournament.slotsTotal > 0 && [2, 4, 8, 16, 32].includes(tournament.slotsTotal)) {
                 const newBracket = generateInitialBracket(tournament.confirmedTeams, tournament.slotsTotal);
                 setBracket(newBracket);
             } else {
@@ -577,7 +585,14 @@ function BracketManagerDialog({
     const handleReset = async () => {
         if (!tournament) return;
         setIsSaving(true);
-        await onBracketReset(tournament.id);
+        try {
+            await onBracketReset(tournament.id);
+        } catch (error) {
+            console.error("Failed to reset bracket from dialog:", error);
+            // Parent function will toast on error
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     if (!tournament) return null;
