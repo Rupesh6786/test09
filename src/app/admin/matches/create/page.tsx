@@ -769,8 +769,8 @@ function BracketManagerDialog({
                         <TabsTrigger value="teams">Manage Teams</TabsTrigger>
                     </TabsList>
                     
-                    <TabsContent value="bracket" className="flex-grow overflow-hidden mt-4">
-                        <ScrollArea className="h-full pr-2">
+                    <TabsContent value="bracket" className="flex-grow overflow-y-auto mt-4">
+                        <div className="pr-4">
                              {bracket ? (
                                 <div className="flex flex-col gap-6">
                                     {bracket.map((round, roundIndex) => (
@@ -857,33 +857,31 @@ function BracketManagerDialog({
                                     This tournament does not have a generated bracket. Ensure it is "Ongoing" and has confirmed teams.
                                 </p>
                             )}
-                        </ScrollArea>
+                        </div>
                     </TabsContent>
                     
-                    <TabsContent value="teams" className="flex-grow overflow-hidden mt-4">
-                        <ScrollArea className="h-full pr-2">
-                             <div className="space-y-2">
-                                <p className="text-sm text-muted-foreground">
-                                  Remove teams from the tournament. This will free up a slot. The bracket will regenerate to reflect the changes.
-                                </p>
-                                <ul className="space-y-2">
-                                  {(tournament.confirmedTeams || []).length > 0 ? tournament.confirmedTeams?.map((team) => (
-                                    <li key={team.teamName} className="flex items-center justify-between p-2 pl-4 bg-muted rounded-md">
-                                      <span className="font-medium">{team.teamName}</span>
-                                      <Button variant="ghost" size="icon" onClick={() => handleTeamRemoveClick(team)} disabled={isSaving}>
-                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                      </Button>
-                                    </li>
-                                  )) : (
-                                      <p className="text-muted-foreground text-center py-8">No confirmed teams yet.</p>
-                                  )}
-                                </ul>
-                              </div>
-                        </ScrollArea>
+                    <TabsContent value="teams" className="flex-grow overflow-y-auto mt-4">
+                        <div className="space-y-2 pr-4">
+                            <p className="text-sm text-muted-foreground">
+                                Remove teams from the tournament. This will free up a slot. The bracket will regenerate to reflect the changes.
+                            </p>
+                            <ul className="space-y-2">
+                                {(tournament.confirmedTeams || []).length > 0 ? tournament.confirmedTeams?.map((team) => (
+                                <li key={team.teamName} className="flex items-center justify-between p-2 pl-4 bg-muted rounded-md">
+                                    <span className="font-medium">{team.teamName}</span>
+                                    <Button variant="ghost" size="icon" onClick={() => handleTeamRemoveClick(team)} disabled={isSaving}>
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                </li>
+                                )) : (
+                                    <p className="text-muted-foreground text-center py-8">No confirmed teams yet.</p>
+                                )}
+                            </ul>
+                            </div>
                     </TabsContent>
                 </Tabs>
                 
-                <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-2 pt-4 border-t mt-4">
+                <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-2 pt-4 border-t mt-4 flex-shrink-0">
                     <div className="flex flex-col sm:flex-row gap-2">
                         <Button variant="destructive" onClick={handleReset} disabled={isSaving}>
                             <Trash2 className="mr-2 h-4 w-4" /> Reset Progress
