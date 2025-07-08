@@ -10,6 +10,8 @@ import { PubgIcon } from '@/components/icons/pubg-icon';
 import { FreeFireIcon } from '@/components/icons/freefire-icon';
 import { Users, Calendar, Trophy, Coins, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { isFuture, parseISO } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 type TournamentCardProps = {
   tournament: Tournament;
@@ -20,11 +22,25 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
   const slotsPercentage = (slotsAllotted / tournament.slotsTotal) * 100;
   const slotsLeft = tournament.slotsTotal - slotsAllotted;
 
+  // Check if the tournament is upcoming and its start date is in the future.
+  const isUpcomingAndLocked = tournament.status === 'Upcoming' && tournament.startDate && isFuture(parseISO(tournament.startDate));
+
+  // Determine the wrapper component and its props based on the condition.
+  const WrapperComponent = isUpcomingAndLocked ? 'div' : Link;
+  const wrapperProps = isUpcomingAndLocked 
+    ? { className: "flex flex-col flex-grow cursor-not-allowed" } 
+    : { href: `/tournaments/${tournament.id}`, className: "flex flex-col flex-grow" };
+
   return (
-    <Card className="w-full max-w-sm bg-card/80 backdrop-blur-sm border-border/50 overflow-hidden transform transition-all duration-300 hover:scale-105 hover:-translate-y-2 hover:shadow-lg hover:shadow-primary/20 hover:border-primary/50 flex flex-col h-full" style={{ transformStyle: 'preserve-3d' }}>
+    <Card 
+      className={cn(
+        "w-full max-w-sm bg-card/80 backdrop-blur-sm border-border/50 overflow-hidden transform transition-all duration-300 flex flex-col h-full",
+        !isUpcomingAndLocked && "hover:scale-105 hover:-translate-y-2 hover:shadow-lg hover:shadow-primary/20 hover:border-primary/50"
+      )} 
+      style={{ transformStyle: 'preserve-3d' }}
+    >
       
-      {/* This link wraps the main content area, making it clickable */}
-      <Link href={`/tournaments/${tournament.id}`} className="flex flex-col flex-grow">
+      <WrapperComponent {...wrapperProps}>
         <CardHeader className="p-4">
           <div className="flex justify-between items-start">
               <CardTitle className="font-headline text-lg tracking-wide">{tournament.title}</CardTitle>
@@ -67,7 +83,7 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
               <Progress value={slotsPercentage} className="h-2 bg-primary/20" indicatorClassName="bg-primary" />
           </div>
         </CardContent>
-      </Link>
+      </WrapperComponent>
       
       <CardFooter className="p-4 mt-auto">
         {tournament.status === 'Upcoming' ? (
