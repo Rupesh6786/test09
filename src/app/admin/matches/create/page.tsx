@@ -25,14 +25,15 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { useToast } from '@/hooks/use-toast';
-import { Search, PlusCircle, Edit, Trash2, Award, Loader2 } from 'lucide-react';
+import { Search, PlusCircle, Edit, Trash2, Award, Loader2, Shuffle } from 'lucide-react';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, addDoc, updateDoc, deleteDoc, query, orderBy, runTransaction, where, limit, increment } from 'firebase/firestore';
+import { collection, getDocs, doc, addDoc, updateDoc, deleteDoc, query, orderBy, runTransaction, where, limit, increment, arrayRemove } from 'firebase/firestore';
 import type { Tournament, BracketTeam, BracketRound, BracketMatchup } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from '@/lib/utils';
 
 
@@ -194,32 +195,54 @@ export default function ManageMatchesPage() {
     }
   };
   
-  const handleResetBracket = async (tournamentId: string) => {
-    if (!window.confirm("Are you sure you want to reset this bracket? This will clear all match results and cannot be undone.")) return;
+    const handleResetBracket = async (tournamentId: string) => {
+        if (!window.confirm("Are you sure you want to reset bracket progress? This will clear all match results but keep the current team matchups.")) return;
 
-    const tournamentToReset = tournaments.find(t => t.id === tournamentId);
-    if (!tournamentToReset || !tournamentToReset.confirmedTeams) {
-        toast({
-            title: "Error",
-            description: "Cannot reset bracket. Tournament data or confirmed teams are missing.",
-            variant: "destructive"
-        });
-        return;
-    }
+        const tournamentToReset = tournaments.find(t => t.id === tournamentId);
+        if (!tournamentToReset || !tournamentToReset.bracket) {
+            toast({ title: "Error", description: "Cannot reset progress, bracket not found.", variant: "destructive" });
+            return;
+        }
 
-    const docRef = doc(db, "tournaments", tournamentId);
-    try {
-        const regeneratedBracket = generateInitialBracket(tournamentToReset.confirmedTeams, tournamentToReset.slotsTotal);
-        await updateDoc(docRef, { bracket: regeneratedBracket });
-        toast({ title: "Success", description: "The bracket has been reset and updated." });
+        const docRef = doc(db, "tournaments", tournamentId);
+        try {
+            // Re-generate bracket using existing teams to clear winners.
+            const resetBracket = generateInitialBracket(tournamentToReset.confirmedTeams || [], tournamentToReset.slotsTotal);
+            await updateDoc(docRef, { bracket: resetBracket });
+            toast({ title: "Success", description: "Bracket progress has been reset." });
+            await fetchTournaments();
+        } catch (error) {
+            console.error("Error resetting bracket: ", error);
+            toast({ title: "Error", description: "Could not reset the bracket.", variant: "destructive" });
+        }
+    };
+    
+    const handleRemoveTeam = async (tournamentId: string, teamToRemove: BracketTeam) => {
+        if (!window.confirm(`Are you sure you want to remove ${teamToRemove.teamName} from the tournament? This action will also remove their registration entry.`)) return;
 
-        // This fetch will update the tournament prop for the dialog, causing it to re-render with the new data.
-        await fetchTournaments();
-    } catch (error) {
-        console.error("Error resetting bracket: ", error);
-        toast({ title: "Error", description: "Could not reset the bracket.", variant: "destructive" });
-    }
-  };
+        const tournamentRef = doc(db, "tournaments", tournamentId);
+        try {
+            // This transaction ensures we update both tournament and registration atomically
+            await runTransaction(db, async (transaction) => {
+                const tournamentDoc = await transaction.get(tournamentRef);
+                if (!tournamentDoc.exists()) {
+                    throw new Error("Tournament not found!");
+                }
+
+                // Remove team and decrement slot count
+                transaction.update(tournamentRef, {
+                    slotsAllotted: increment(-1),
+                    confirmedTeams: arrayRemove(teamToRemove)
+                });
+            });
+
+            toast({ title: "Team Removed", description: `${teamToRemove.teamName} has been removed.` });
+            await fetchTournaments(); // Refresh data to update the dialog
+        } catch (error: any) {
+            console.error("Error removing team: ", error);
+            toast({ title: "Error", description: error.message || "Failed to remove team.", variant: "destructive" });
+        }
+    };
 
 
   const getStatusBadgeVariant = (status: string) => {
@@ -361,6 +384,7 @@ export default function ManageMatchesPage() {
         onBracketUpdate={handleBracketUpdate}
         onFinalWinner={handleFinalWinner}
         onBracketReset={handleResetBracket}
+        onTeamRemove={handleRemoveTeam}
       />
     </div>
   );
@@ -517,7 +541,7 @@ const generateInitialBracket = (teams: BracketTeam[], slotsTotal: number): Brack
 }
 
 function BracketManagerDialog({ 
-    isOpen, setIsOpen, tournament, onBracketUpdate, onFinalWinner, onBracketReset
+    isOpen, setIsOpen, tournament, onBracketUpdate, onFinalWinner, onBracketReset, onTeamRemove
 }: { 
     isOpen: boolean; 
     setIsOpen: (open: boolean) => void; 
@@ -525,6 +549,7 @@ function BracketManagerDialog({
     onBracketUpdate: (tournamentId: string, newBracket: BracketRound[]) => Promise<void>;
     onFinalWinner: (tournament: Tournament, winningTeam: BracketTeam) => Promise<void>;
     onBracketReset: (tournamentId: string) => Promise<void>;
+    onTeamRemove: (tournamentId: string, team: BracketTeam) => Promise<void>;
 }) {
     const [bracket, setBracket] = useState<BracketRound[] | undefined>(undefined);
     const [isSaving, setIsSaving] = useState(false);
@@ -532,7 +557,7 @@ function BracketManagerDialog({
 
     useEffect(() => {
         if (isOpen && tournament) {
-            if (!tournament.bracket && tournament.confirmedTeams && tournament.slotsTotal > 0 && [2, 4, 8, 16, 32].includes(tournament.slotsTotal)) {
+            if ((!tournament.bracket || tournament.bracket.length === 0) && tournament.confirmedTeams && tournament.slotsTotal > 0 && [2, 4, 8, 16, 32].includes(tournament.slotsTotal)) {
                 const newBracket = generateInitialBracket(tournament.confirmedTeams, tournament.slotsTotal);
                 setBracket(newBracket);
             } else {
@@ -547,12 +572,10 @@ function BracketManagerDialog({
         const newBracket = [...bracket];
         const currentMatchup = newBracket[roundIndex].matchups[matchupIndex];
         
-        // Prevent changing winner if it's already set and propagated
         if(currentMatchup.winner?.teamName === winner.teamName) return;
 
         currentMatchup.winner = winner;
 
-        // Propagate winner to the next round
         if (roundIndex + 1 < newBracket.length) {
             const nextRoundMatchupIndex = Math.floor(matchupIndex / 2);
             const teamSlot = matchupIndex % 2 === 0 ? 'team1' : 'team2';
@@ -565,9 +588,12 @@ function BracketManagerDialog({
     const handleSaveChanges = async () => {
         if (!tournament || !bracket) return;
         setIsSaving(true);
-        await onBracketUpdate(tournament.id, bracket);
-        setIsSaving(false);
-        toast({ title: "Success", description: "Bracket progress has been saved." });
+        try {
+            await onBracketUpdate(tournament.id, bracket);
+            toast({ title: "Success", description: "Bracket progress has been saved." });
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleDeclareFinalWinner = async () => {
@@ -575,8 +601,11 @@ function BracketManagerDialog({
         const finalWinner = bracket[bracket.length - 1].matchups[0].winner;
         if (finalWinner) {
             setIsSaving(true);
-            await onFinalWinner(tournament, finalWinner);
-            setIsSaving(false);
+            try {
+                await onFinalWinner(tournament, finalWinner);
+            } finally {
+                setIsSaving(false);
+            }
         } else {
             toast({ title: "Error", description: "Select a winner for the final match first.", variant: "destructive" });
         }
@@ -587,9 +616,32 @@ function BracketManagerDialog({
         setIsSaving(true);
         try {
             await onBracketReset(tournament.id);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleTeamRemoveClick = async (team: BracketTeam) => {
+        if (!tournament) return;
+        setIsSaving(true);
+        try {
+            await onTeamRemove(tournament.id, team);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleShuffleMatchups = async () => {
+        if (!tournament || !tournament.confirmedTeams) return;
+        if (!window.confirm("Are you sure you want to shuffle matchups? This will reset any current bracket progress.")) return;
+        
+        setIsSaving(true);
+        try {
+            const newBracket = generateInitialBracket(tournament.confirmedTeams, tournament.slotsTotal);
+            await onBracketUpdate(tournament.id, newBracket);
+            toast({ title: "Success", description: "Matchups have been shuffled." });
         } catch (error) {
-            console.error("Failed to reset bracket from dialog:", error);
-            // Parent function will toast on error
+             toast({ title: "Error", description: "Failed to shuffle matchups.", variant: "destructive" });
         } finally {
             setIsSaving(false);
         }
@@ -602,59 +654,95 @@ function BracketManagerDialog({
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogContent className="max-w-4xl max-h-[90vh]">
+            <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>Manage Bracket for "{tournament.title}"</DialogTitle>
                     <DialogDescription>
-                        Select a winner for each match to advance them. Save progress periodically.
+                        Select winners to advance them, manage teams, or reset progress.
                     </DialogDescription>
                 </DialogHeader>
-                <ScrollArea className="my-4 h-[60vh]">
-                    <div className="p-1">
-                    {bracket ? (
-                        <div className="flex flex-col gap-6">
-                            {bracket.map((round, roundIndex) => (
-                                <div key={round.title}>
-                                    <h3 className="font-bold text-lg text-primary">{round.title}</h3>
-                                    <Separator className="my-2" />
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {round.matchups.map((matchup, matchupIndex) => (
-                                            <Card key={matchupIndex} className="p-4 bg-muted/50">
-                                                <RadioGroup
-                                                    value={matchup.winner?.teamName}
-                                                    onValueChange={(teamName) => {
-                                                        const winner = matchup.team1?.teamName === teamName ? matchup.team1 : matchup.team2;
-                                                        handleWinnerSelect(roundIndex, matchupIndex, winner);
-                                                    }}
-                                                    disabled={!matchup.team1 || !matchup.team2 || isSaving}
-                                                >
-                                                    <div className={cn("flex items-center space-x-2 p-2 rounded-md", { 'bg-primary/20': matchup.winner?.teamName === matchup.team1?.teamName })}>
-                                                        <RadioGroupItem value={matchup.team1?.teamName || ''} id={`r${roundIndex}m${matchupIndex}t1`} />
-                                                        <Label htmlFor={`r${roundIndex}m${matchupIndex}t1`} className="flex-1 cursor-pointer">{matchup.team1?.teamName || 'TBD'}</Label>
-                                                    </div>
-                                                    <div className="text-center text-xs font-bold text-muted-foreground">VS</div>
-                                                    <div className={cn("flex items-center space-x-2 p-2 rounded-md", { 'bg-primary/20': matchup.winner?.teamName === matchup.team2?.teamName })}>
-                                                        <RadioGroupItem value={matchup.team2?.teamName || ''} id={`r${roundIndex}m${matchupIndex}t2`} />
-                                                        <Label htmlFor={`r${roundIndex}m${matchupIndex}t2`} className="flex-1 cursor-pointer">{matchup.team2?.teamName || 'TBD'}</Label>
-                                                    </div>
-                                                </RadioGroup>
-                                            </Card>
-                                        ))}
-                                    </div>
+                
+                <Tabs defaultValue="bracket" className="flex-grow flex flex-col overflow-hidden">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="bracket">Bracket View</TabsTrigger>
+                        <TabsTrigger value="teams">Manage Teams</TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="bracket" className="flex-grow overflow-hidden mt-4">
+                        <ScrollArea className="h-full pr-2">
+                             {bracket ? (
+                                <div className="flex flex-col gap-6">
+                                    {bracket.map((round, roundIndex) => (
+                                        <div key={round.title}>
+                                            <h3 className="font-bold text-lg text-primary">{round.title}</h3>
+                                            <Separator className="my-2" />
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {round.matchups.map((matchup, matchupIndex) => (
+                                                    <Card key={matchupIndex} className="p-4 bg-muted/50">
+                                                        <RadioGroup
+                                                            value={matchup.winner?.teamName}
+                                                            onValueChange={(teamName) => {
+                                                                const winner = matchup.team1?.teamName === teamName ? matchup.team1 : matchup.team2;
+                                                                handleWinnerSelect(roundIndex, matchupIndex, winner);
+                                                            }}
+                                                            disabled={!matchup.team1 || !matchup.team2 || isSaving}
+                                                        >
+                                                            <div className={cn("flex items-center space-x-2 p-2 rounded-md", { 'bg-primary/20': matchup.winner?.teamName === matchup.team1?.teamName })}>
+                                                                <RadioGroupItem value={matchup.team1?.teamName || ''} id={`r${roundIndex}m${matchupIndex}t1`} />
+                                                                <Label htmlFor={`r${roundIndex}m${matchupIndex}t1`} className="flex-1 cursor-pointer">{matchup.team1?.teamName || 'TBD'}</Label>
+                                                            </div>
+                                                            <div className="text-center text-xs font-bold text-muted-foreground">VS</div>
+                                                            <div className={cn("flex items-center space-x-2 p-2 rounded-md", { 'bg-primary/20': matchup.winner?.teamName === matchup.team2?.teamName })}>
+                                                                <RadioGroupItem value={matchup.team2?.teamName || ''} id={`r${roundIndex}m${matchupIndex}t2`} />
+                                                                <Label htmlFor={`r${roundIndex}m${matchupIndex}t2`} className="flex-1 cursor-pointer">{matchup.team2?.teamName || 'TBD'}</Label>
+                                                            </div>
+                                                        </RadioGroup>
+                                                    </Card>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <p className="text-muted-foreground text-center py-8">
-                            This tournament does not have a generated bracket. Ensure it is "Ongoing" and has confirmed teams.
-                        </p>
-                    )}
+                            ) : (
+                                <p className="text-muted-foreground text-center py-8">
+                                    This tournament does not have a generated bracket. Ensure it is "Ongoing" and has confirmed teams.
+                                </p>
+                            )}
+                        </ScrollArea>
+                    </TabsContent>
+                    
+                    <TabsContent value="teams" className="flex-grow overflow-hidden mt-4">
+                        <ScrollArea className="h-full pr-2">
+                             <div className="space-y-2">
+                                <p className="text-sm text-muted-foreground">
+                                  Remove teams from the tournament. This will free up a slot. The bracket will regenerate to reflect the changes.
+                                </p>
+                                <ul className="space-y-2">
+                                  {(tournament.confirmedTeams || []).length > 0 ? tournament.confirmedTeams?.map((team) => (
+                                    <li key={team.teamName} className="flex items-center justify-between p-2 pl-4 bg-muted rounded-md">
+                                      <span className="font-medium">{team.teamName}</span>
+                                      <Button variant="ghost" size="icon" onClick={() => handleTeamRemoveClick(team)} disabled={isSaving}>
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                      </Button>
+                                    </li>
+                                  )) : (
+                                      <p className="text-muted-foreground text-center py-8">No confirmed teams yet.</p>
+                                  )}
+                                </ul>
+                              </div>
+                        </ScrollArea>
+                    </TabsContent>
+                </Tabs>
+                
+                <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-2 pt-4 border-t mt-4">
+                    <div className="flex flex-col sm:flex-row gap-2">
+                        <Button variant="destructive" onClick={handleReset} disabled={isSaving}>
+                            <Trash2 className="mr-2 h-4 w-4" /> Reset Progress
+                        </Button>
+                        <Button variant="outline" onClick={handleShuffleMatchups} disabled={isSaving}>
+                            <Shuffle className="mr-2 h-4 w-4" /> Shuffle Matchups
+                        </Button>
                     </div>
-                </ScrollArea>
-                <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-2 pt-4">
-                    <Button variant="destructive" onClick={handleReset} disabled={isSaving}>
-                        <Trash2 className="mr-2 h-4 w-4" /> Reset Bracket
-                    </Button>
                     <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
                         <DialogClose asChild><Button variant="outline" disabled={isSaving}>Close</Button></DialogClose>
                         <Button variant="secondary" onClick={handleSaveChanges} disabled={isSaving}>
