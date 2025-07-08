@@ -91,7 +91,7 @@ export default function TournamentDetailPage() {
             {/* Left Column: Bracket */}
             <div className="lg:col-span-2">
               <h2 className="text-2xl font-headline text-accent mb-4">Live Bracket</h2>
-              <TournamentBracket teams={confirmedTeams} prizePool={tournament.prizePool} />
+              <TournamentBracket teams={confirmedTeams} prizePool={tournament.prizePool} slotsTotal={tournament.slotsTotal} />
             </div>
 
             {/* Right Column: Details */}
