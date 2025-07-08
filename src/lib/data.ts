@@ -147,6 +147,14 @@ export type WinnerLog = {
   wonAt: Timestamp;
 };
 
+export type EmailTemplate = {
+  id: string;
+  name: string;
+  subject: string;
+  body: string;
+  createdAt: Timestamp;
+};
+
 
 export const testimonials: Testimonial[] = [
   {
