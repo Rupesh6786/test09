@@ -90,20 +90,8 @@ export default function TournamentDetailPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Column: Bracket */}
             <div className="lg:col-span-2">
-              <Card className="bg-card/80 backdrop-blur-sm border-border/50 h-full">
-                <CardHeader>
-                  <CardTitle className="text-2xl font-headline text-accent">Live Bracket</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {confirmedTeams.length > 0 ? (
-                     <TournamentBracket teams={confirmedTeams} />
-                  ) : (
-                    <div className="flex items-center justify-center h-64">
-                        <p className="text-muted-foreground">Bracket will be generated once teams are confirmed.</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <h2 className="text-2xl font-headline text-accent mb-4">Live Bracket</h2>
+              <TournamentBracket teams={confirmedTeams} prizePool={tournament.prizePool} />
             </div>
 
             {/* Right Column: Details */}
