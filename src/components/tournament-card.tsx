@@ -6,12 +6,11 @@ import type { Tournament } from '@/lib/data';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { PubgIcon } from '@/components/icons/pubg-icon';
-import { FreeFireIcon } from '@/components/icons/freefire-icon';
 import { Users, Calendar, Trophy, Coins, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
+import Image from 'next/image';
 
 type TournamentCardProps = {
   tournament: Tournament;
@@ -67,7 +66,13 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
       <CardHeader className="p-4">
         <div className="flex justify-between items-start">
             <CardTitle className="font-headline text-lg tracking-wide">{tournament.title}</CardTitle>
-            {tournament.game === 'PUBG' ? <PubgIcon className="w-10 h-10" /> : <FreeFireIcon className="w-10 h-10" />}
+            <Image
+              src={tournament.game === 'PUBG' ? '/icons/bgmi-icons.png' : '/icons/ff-icon.png'}
+              alt={tournament.game}
+              width={40}
+              height={40}
+              className="w-10 h-10"
+            />
         </div>
         <div className="flex items-center gap-2">
             <Badge variant={tournament.status === 'Ongoing' ? 'warning' : 'success'} className="uppercase">
