@@ -1,103 +1,79 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper function to check for the admin UID
+    // Helper function to check if the user is the admin
     function isAdmin() {
       return request.auth.uid == 'ymwd0rW1wnNZkYlUR7cUi9dkd452';
     }
-    
-    // Helper function to check if a user is logged in
-    function isLoggedIn() {
-      return request.auth != null;
-    }
 
-    // Helper function to check if the authenticated user is the owner of a document
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-    
-    // Helper function to check if a user is a member of a community.
-    // This requires one read operation per check.
-    function isCommunityMember(communityId) {
-      return get(/databases/$(database)/documents/communities/$(communityId)).data.memberIds.hasAny([request.auth.uid]);
-    }
-
-    // Users can read any profile (for leaderboards, etc.).
-    // A user can only create or update their own profile.
-    // An admin can update any user profile.
+    // Users: Can read their own profile, anyone can read public profiles.
+    // Users can only create and update their own profile.
     match /users/{userId} {
       allow read: if true;
-      allow create: if isOwner(userId) && request.resource.data.uid == userId;
-      allow update: if isOwner(userId) || isAdmin();
+      allow create, update: if request.auth.uid == userId || isAdmin();
       allow delete: if isAdmin();
     }
-
-    // Tournaments are public, but only admins can create, update, or delete them.
+    
+    // Tournaments: Publicly readable, only admin can write.
     match /tournaments/{tournamentId} {
       allow read: if true;
       allow write: if isAdmin();
     }
-
-    // Users can create their own registration.
-    // A user can only read their own registration data.
-    // Admins can read/update all registrations.
+    
+    // Registrations: Users can create their own.
     match /registrations/{registrationId} {
-      allow create: if isLoggedIn() && request.resource.data.userId == request.auth.uid;
-      allow read: if isOwner(request.resource.data.userId) || isAdmin();
-      allow update, delete: if isAdmin();
+      allow create: if request.auth != null;
+      allow delete: if isAdmin();
+      
+      // Admin can read/update all registrations
+      allow read, update: if isAdmin();
+      
+      // Users can read/update their own registrations. This is required for queries to work.
+      allow read, update: if request.auth.uid == resource.data.userId;
     }
 
-    // Anyone can submit a contact inquiry.
-    // Only admins can read or manage them.
+    // Inquiries: Logged-in users can create. Only admin can read/update.
     match /inquiries/{inquiryId} {
-      allow create: if true;
+      allow create: if request.auth != null;
       allow read, update, delete: if isAdmin();
     }
 
-    // Users can create their own redeem requests.
-    // Users can only read their own requests.
-    // Admins can manage all requests.
+    // Redeem Requests: Users can create and manage their own. Admin can manage all.
     match /redeemRequests/{requestId} {
-       allow create: if isLoggedIn() && request.resource.data.userId == request.auth.uid;
-       allow read: if isOwner(request.resource.data.userId) || isAdmin();
-       allow update, delete: if isAdmin();
+      allow create: if request.auth.uid == request.resource.data.userId;
+      allow delete: if isAdmin();
+
+      // Admin can read/update all requests
+      allow read, update: if isAdmin();
+
+      // Users can read/update their own requests. This is required for queries to work.
+      allow read, update: if request.auth.uid == resource.data.userId;
     }
     
-    // Winner logs are public, but only admins can write to them.
+    // Winners: Publicly readable, only admin can write (via transaction).
     match /winners/{winnerId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Community rules
+    // Communities: Publicly readable. Members can create messages.
+    // Only creator or admin can update/delete community info.
     match /communities/{communityId} {
       allow read: if true;
+      allow create: if request.auth != null;
+      allow update: if resource.data.creatorId == request.auth.uid || isAdmin();
+      allow delete: if (resource.data.creatorId == request.auth.uid && resource.data.members <= 1) || isAdmin();
       
-      // A logged-in user can create a community. The creatorId must match their UID.
-      allow create: if isLoggedIn() 
-                    && request.resource.data.creatorId == request.auth.uid
-                    && request.resource.data.memberIds[0] == request.auth.uid
-                    && request.resource.data.members == 1;
-
-      // The creator or an admin can update anything.
-      // Other logged-in users can only update the member list to join/leave.
-      allow update: if isLoggedIn() && (
-                      (get(/databases/$(database)/documents/communities/$(communityId)).data.creatorId == request.auth.uid) ||
-                      (request.resource.data.diff(get(/databases/$(database)/documents/communities/$(communityId)).data).affectedKeys().hasOnly(['memberIds', 'members'])) ||
-                      isAdmin()
-                    );
-      
-      // Only the creator or an admin can delete a community.
-      allow delete: if isAdmin() || get(/databases/$(database)/documents/communities/$(communityId)).data.creatorId == request.auth.uid;
-
-      // Messages Subcollection: Only community members can interact with messages.
+      // Messages within a community
       match /messages/{messageId} {
-        allow read, write: if isCommunityMember(communityId);
-        // Users can only delete their own messages.
-        allow delete: if isOwner(resource.data.userId) || isAdmin();
+        function isMember() {
+          return get(/databases/$(database)/documents/communities/$(communityId)).data.memberIds.hasAny([request.auth.uid]);
+        }
+        
+        allow read, create: if isMember();
+        allow update, delete: if (resource.data.userId == request.auth.uid && isMember()) || isAdmin();
       }
     }
   }
