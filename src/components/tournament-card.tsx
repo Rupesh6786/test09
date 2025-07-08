@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
+import { format, isAfter, startOfToday } from 'date-fns';
 
 type TournamentCardProps = {
   tournament: Tournament;
@@ -27,15 +28,14 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
   const slotsLeft = tournament.slotsTotal - slotsAllotted;
   const isFull = slotsLeft <= 0;
 
-  // This is a more robust way to check if the tournament is locked.
-  // It compares date objects in the user's local timezone.
   let isUpcomingAndLocked = false;
   if (tournament.status === 'Upcoming' && tournament.startDate) {
     try {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0); // Set to beginning of today for accurate comparison
+      // Create a date object from the 'YYYY-MM-DD' string.
+      // Compare it with the start of today to see if it's in the future.
       const startDate = new Date(tournament.startDate);
-      if (startDate > today) {
+      const today = startOfToday();
+      if (isAfter(startDate, today)) {
         isUpcomingAndLocked = true;
       }
     } catch (e) {
@@ -47,7 +47,7 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
     if (isUpcomingAndLocked) {
       toast({
         title: "Tournament Locked",
-        description: `This tournament is scheduled to start on ${tournament.startDate}. Registrations are not open yet.`,
+        description: "This tournament is not started yet.",
       });
     } else {
       router.push(`/tournaments/${tournament.id}`);
@@ -55,7 +55,16 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
   };
 
   const getButton = () => {
-    if (isFull && tournament.status === 'Upcoming') {
+    if (isUpcomingAndLocked) {
+        return (
+            <Button disabled className="w-full font-bold">
+                <Calendar className="w-4 h-4 mr-2" />
+                Will start on {format(new Date(tournament.startDate!), 'd MMM')}
+            </Button>
+        );
+    }
+    
+    if (isFull) {
         return (
             <Button disabled className="w-full font-bold">
                 <Users className="w-4 h-4 mr-2" />
@@ -64,8 +73,6 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
         );
     }
     
-    // For all other cases (including locked, upcoming, and ongoing), show the "Register Now" button.
-    // The link will always take the user to the registration page.
     return (
       <Button asChild className="w-full bg-primary/90 text-primary-foreground hover:bg-primary font-bold transition-all hover:shadow-lg hover:box-shadow-primary">
         <Link href={`/tournaments/${tournament.id}/register`}>Register Now</Link>
@@ -104,7 +111,7 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
         <CardContent className="p-4 pt-0 space-y-3 text-sm flex-grow">
           <div className="flex items-center text-muted-foreground">
               <Calendar className="w-4 h-4 mr-2" />
-              <span>{tournament.date} @ {tournament.time}</span>
+              <span>Registration ends: {tournament.date} @ {tournament.time}</span>
           </div>
           {tournament.teamType && (
               <div className="flex items-center text-muted-foreground">
