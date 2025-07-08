@@ -1,3 +1,4 @@
+
 "use client";
 
 import { cn } from "@/lib/utils";
@@ -90,6 +91,10 @@ const getRoundTitle = (matchupCount: number) => {
 };
 
 const generatePlaceholderBracket = (teams: BracketTeam[], slotsTotal: number): BracketRound[] => {
+    if (!slotsTotal) {
+        return [];
+    }
+    
     let rounds: BracketRound[] = [];
     let currentTeams: (BracketTeam | null)[] = [...(teams || [])];
 
@@ -150,7 +155,7 @@ export function TournamentBracket({ tournament }: { tournament: Tournament }) {
     return (
       <div className="w-full bg-card text-card-foreground rounded-lg p-8 flex flex-col items-center justify-center h-96 border">
         <p className="text-muted-foreground">The bracket is being prepared.</p>
-        <p className="text-muted-foreground text-sm">Confirmed Teams: {tournament.confirmedTeams?.length || 0} / {tournament.slotsTotal}</p>
+        <p className="text-muted-foreground text-sm">Confirmed Teams: {tournament.confirmedTeams?.length || 0} / {tournament.slotsTotal || 'N/A'}</p>
       </div>
     );
   }
