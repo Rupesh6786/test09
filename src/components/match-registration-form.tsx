@@ -54,13 +54,23 @@ export function MatchRegistrationForm({ tournamentTitle, tournamentId, teamType 
     const registrationSchema = createRegistrationSchema(teamType);
     type RegistrationFormValues = z.infer<typeof registrationSchema>;
 
+    // Dynamically set default values based on team type to avoid uncontrolled to controlled input error.
+    const defaultValues: Partial<RegistrationFormValues> = {
+        teamName: '',
+        upiId: '',
+        player1GameId: '',
+    };
+    if (teamType === 'Duo' || teamType === 'Squad') {
+        defaultValues.player2GameId = '';
+    }
+    if (teamType === 'Squad') {
+        defaultValues.player3GameId = '';
+        defaultValues.player4GameId = '';
+    }
+
     const form = useForm<RegistrationFormValues>({
         resolver: zodResolver(registrationSchema),
-        defaultValues: {
-            teamName: '',
-            upiId: '',
-            player1GameId: '',
-        }
+        defaultValues: defaultValues as RegistrationFormValues,
     });
 
     const onSubmit: SubmitHandler<RegistrationFormValues> = async (data) => {
