@@ -68,6 +68,17 @@ export default function ManageMatchesPage() {
   useEffect(() => {
     fetchTournaments();
   }, []);
+  
+  useEffect(() => {
+    // This effect ensures the dialog updates if the underlying tournament data changes while it's open.
+    if (isBracketManagerOpen && selectedTournamentForBracket) {
+      const updatedTournament = tournaments.find(t => t.id === selectedTournamentForBracket.id);
+      // Deep compare with JSON.stringify to avoid infinite loops from object references
+      if (updatedTournament && JSON.stringify(updatedTournament) !== JSON.stringify(selectedTournamentForBracket)) {
+        setSelectedTournamentForBracket(updatedTournament);
+      }
+    }
+  }, [tournaments, isBracketManagerOpen, selectedTournamentForBracket]);
 
   const filteredTournaments = useMemo(() => {
     return tournaments
@@ -221,23 +232,33 @@ export default function ManageMatchesPage() {
         if (!window.confirm(`Are you sure you want to remove ${teamToRemove.teamName} from the tournament? This action will also remove their registration entry.`)) return;
 
         const tournamentRef = doc(db, "tournaments", tournamentId);
+        const registrationsRef = collection(db, 'registrations');
+        const q = query(registrationsRef, where('tournamentId', '==', tournamentId), where('teamName', '==', teamToRemove.teamName), limit(1));
+
         try {
-            // This transaction ensures we update both tournament and registration atomically
+            const regSnapshot = await getDocs(q);
+            const registrationDoc = regSnapshot.docs.length > 0 ? regSnapshot.docs[0] : null;
+
             await runTransaction(db, async (transaction) => {
                 const tournamentDoc = await transaction.get(tournamentRef);
                 if (!tournamentDoc.exists()) {
                     throw new Error("Tournament not found!");
                 }
 
-                // Remove team and decrement slot count
+                // Remove team and decrement slot count in the tournament doc
                 transaction.update(tournamentRef, {
                     slotsAllotted: increment(-1),
                     confirmedTeams: arrayRemove(teamToRemove)
                 });
+                
+                // Also delete the registration document to maintain data consistency
+                if (registrationDoc) {
+                    transaction.delete(registrationDoc.ref);
+                }
             });
 
             toast({ title: "Team Removed", description: `${teamToRemove.teamName} has been removed.` });
-            await fetchTournaments(); // Refresh data to update the dialog
+            await fetchTournaments(); // Refresh data to update the dialog via the useEffect hook
         } catch (error: any) {
             console.error("Error removing team: ", error);
             toast({ title: "Error", description: error.message || "Failed to remove team.", variant: "destructive" });
