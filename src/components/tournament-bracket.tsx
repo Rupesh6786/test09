@@ -41,6 +41,19 @@ function TeamSlot({ name }: { name: string }) {
     );
 }
 
+function MobileTeamSlot({ name }: { name: string }) {
+    const isPlaceholder = name === placeholderTeam.name;
+    return (
+        <div className={cn(
+            "flex-1 flex items-center justify-center text-center py-3 px-1 bg-gray-200 rounded-md text-gray-900 font-bold text-xs shadow-md truncate h-12",
+            isPlaceholder && "bg-gray-700/60 text-gray-300 italic font-normal"
+        )}>
+            <span>{name}</span>
+        </div>
+    );
+}
+
+
 export function TournamentBracket({ teams, prizePool }: TournamentBracketProps) {
     const paddedTeams: Team[] = [...teams];
     while (paddedTeams.length < 8) {
@@ -50,16 +63,23 @@ export function TournamentBracket({ teams, prizePool }: TournamentBracketProps) 
     
     const [team1, team2, team3, team4, team5, team6, team7, team8] = finalTeams;
 
+    const matchups = [
+      { group: 'Group A', teams: [team1, team2] },
+      { group: 'Group B', teams: [team5, team6] },
+      { group: 'Group C', teams: [team3, team4] },
+      { group: 'Group D', teams: [team7, team8] },
+    ];
+
     return (
         <div className="w-full bg-gray-800 text-white rounded-lg p-4 md:p-8 flex flex-col items-center font-body">
             {/* Header */}
-            <div className="flex flex-col items-center mb-12">
+            <div className="flex flex-col items-center mb-8 md:mb-12">
                 <BattleBucksBIcon />
                 <h2 className="text-2xl md:text-3xl font-bold uppercase tracking-[0.2em] mt-2">BattleBucks</h2>
             </div>
             
-            {/* Main Bracket Area */}
-            <div className="flex justify-center items-center w-full">
+            {/* Desktop Bracket Area */}
+            <div className="hidden md:flex justify-center items-center w-full">
                 {/* Left Column */}
                 <div className="flex flex-col space-y-8">
                     {/* Group A */}
@@ -125,11 +145,26 @@ export function TournamentBracket({ teams, prizePool }: TournamentBracketProps) 
                 </div>
             </div>
 
+            {/* Mobile Bracket Area */}
+            <div className="w-full space-y-4 md:hidden">
+              {matchups.map((matchup, index) => (
+                <div key={index} className="bg-gray-700/50 rounded-lg p-3">
+                  <p className="text-gray-400 text-xs font-semibold uppercase mb-2">{matchup.group}</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <MobileTeamSlot name={matchup.teams[0].name} />
+                    <span className="text-gray-400 font-bold mx-1">VS</span>
+                    <MobileTeamSlot name={matchup.teams[1].name} />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+
             {/* Footer Prize */}
-            <div className="flex flex-col items-center mt-12 relative">
-                <div className="w-px h-8 bg-gray-400"></div>
+            <div className="flex flex-col items-center mt-8 md:mt-12 relative">
+                <div className="w-px h-8 bg-gray-400 hidden md:block"></div>
                 {/* Connecting lines to trophy */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-px bg-gray-400">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-px bg-gray-400 hidden md:block">
                     <div className="absolute -top-10 left-0 w-px h-10 bg-gray-400"></div>
                     <div className="absolute -top-10 right-0 w-px h-10 bg-gray-400"></div>
                 </div>
