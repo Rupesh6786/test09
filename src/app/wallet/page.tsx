@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { auth, db } from '@/lib/firebase';
-import { doc, onSnapshot, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where, getDocs, type Unsubscribe } from 'firebase/firestore';
 import type { UserProfileData, UserRegistration, RedeemRequest, Tournament } from '@/lib/data';
 import { Loader2, Wallet, User, PiggyBank, History } from 'lucide-react';
 import { RedeemDialog } from '@/components/redeem-dialog';
@@ -32,44 +32,72 @@ export default function WalletPage() {
     const { toast } = useToast();
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        // This will hold the subscription to the user's profile
+        let profileUnsubscribe: Unsubscribe | null = null;
+
+        const authUnsubscribe = onAuthStateChanged(auth, async (user) => {
+            // Unsubscribe from any previous profile listener when auth state changes
+            if (profileUnsubscribe) {
+                profileUnsubscribe();
+            }
+
             if (user) {
                 setAuthUser(user);
                 setIsLoading(true);
 
-                const userDocRef = doc(db, 'users', user.uid);
-                const userUnsubscribe = onSnapshot(userDocRef, (docSnap) => {
-                    if (docSnap.exists()) {
-                        setProfile(docSnap.data() as UserProfileData);
-                    } else {
-                        router.push('/profile'); 
-                    }
-                });
+                try {
+                    // Set up the real-time listener for the user's profile
+                    const userDocRef = doc(db, 'users', user.uid);
+                    profileUnsubscribe = onSnapshot(userDocRef, (docSnap) => {
+                        if (docSnap.exists()) {
+                            setProfile(docSnap.data() as UserProfileData);
+                        } else {
+                            // If profile doesn't exist, maybe they haven't finished registration
+                            router.push('/profile');
+                        }
+                    });
 
-                const tourneyPromise = getDocs(collection(db, "tournaments"));
-                const regPromise = getDocs(query(collection(db, 'registrations'), where('userId', '==', user.uid)));
-                const redeemPromise = getDocs(query(collection(db, 'redeemRequests'), where('userId', '==', user.uid)));
-                
-                const [tourneySnapshot, regSnapshot, redeemSnapshot] = await Promise.all([tourneyPromise, regPromise, redeemPromise]);
+                    // Fetch one-time data for transactions
+                    const tourneyPromise = getDocs(collection(db, "tournaments"));
+                    const regPromise = getDocs(query(collection(db, 'registrations'), where('userId', '==', user.uid)));
+                    const redeemPromise = getDocs(query(collection(db, 'redeemRequests'), where('userId', '==', user.uid)));
+                    
+                    const [tourneySnapshot, regSnapshot, redeemSnapshot] = await Promise.all([tourneyPromise, regPromise, redeemPromise]);
 
-                const fetchedTournaments = tourneySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Tournament[];
-                setTournaments(fetchedTournaments);
+                    const fetchedTournaments = tourneySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Tournament[];
+                    setTournaments(fetchedTournaments);
 
-                const fetchedRegistrations = regSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as UserRegistration[];
-                setRegistrations(fetchedRegistrations);
+                    const fetchedRegistrations = regSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as UserRegistration[];
+                    setRegistrations(fetchedRegistrations);
 
-                const fetchedRedeemRequests = redeemSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as RedeemRequest[];
-                setRedeemRequests(fetchedRedeemRequests);
+                    const fetchedRedeemRequests = redeemSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as RedeemRequest[];
+                    setRedeemRequests(fetchedRedeemRequests);
 
-                setIsLoading(false);
-                return () => userUnsubscribe();
+                } catch (error) {
+                    console.error("Error loading wallet data:", error);
+                    toast({
+                        title: "Error",
+                        description: "Could not load wallet data. Please try again.",
+                        variant: "destructive"
+                    });
+                } finally {
+                    setIsLoading(false);
+                }
             } else {
+                // User is signed out
                 router.push('/login');
                 setIsLoading(false);
             }
         });
-        return () => unsubscribe();
-    }, [router]);
+
+        // Cleanup function for the useEffect hook
+        return () => {
+            authUnsubscribe();
+            if (profileUnsubscribe) {
+                profileUnsubscribe();
+            }
+        };
+    }, [router, toast]);
     
     const transactions = useMemo(() => {
         const registrationTxs = registrations
