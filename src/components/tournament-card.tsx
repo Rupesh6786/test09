@@ -103,7 +103,8 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
       <CardFooter className="p-4 mt-auto">
         {isUpcomingAndLocked ? (
              <Button disabled className="w-full font-bold">
-                Register Now
+                <Calendar className="w-4 h-4 mr-2" />
+                Starts on {tournament.startDate}
             </Button>
         ) : (
             <Button asChild className="w-full bg-primary/90 text-primary-foreground hover:bg-primary font-bold transition-all hover:shadow-lg hover:box-shadow-primary">
