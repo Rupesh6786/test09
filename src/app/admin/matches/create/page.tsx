@@ -194,6 +194,26 @@ export default function ManageMatchesPage() {
     }
   };
   
+  const handleResetBracket = async (tournamentId: string) => {
+    if (!window.confirm("Are you sure you want to reset this bracket? This will clear all match results and cannot be undone.")) return;
+    
+    const docRef = doc(db, "tournaments", tournamentId);
+    try {
+        await updateDoc(docRef, { bracket: null }); // Using null to trigger regeneration
+        toast({ title: "Success", description: "The bracket has been reset." });
+        
+        // Refresh the main tournament list
+        await fetchTournaments();
+
+        // Close the dialog
+        setIsBracketManagerOpen(false);
+        setSelectedTournamentForBracket(null);
+    } catch (error) {
+        console.error("Error resetting bracket: ", error);
+        toast({ title: "Error", description: "Could not reset the bracket.", variant: "destructive" });
+    }
+  };
+
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case 'Upcoming': return 'success';
@@ -332,6 +352,7 @@ export default function ManageMatchesPage() {
         tournament={selectedTournamentForBracket}
         onBracketUpdate={handleBracketUpdate}
         onFinalWinner={handleFinalWinner}
+        onBracketReset={handleResetBracket}
       />
     </div>
   );
@@ -488,13 +509,14 @@ const generateInitialBracket = (teams: BracketTeam[], slotsTotal: number): Brack
 }
 
 function BracketManagerDialog({ 
-    isOpen, setIsOpen, tournament, onBracketUpdate, onFinalWinner 
+    isOpen, setIsOpen, tournament, onBracketUpdate, onFinalWinner, onBracketReset
 }: { 
     isOpen: boolean; 
     setIsOpen: (open: boolean) => void; 
     tournament: Tournament | null;
     onBracketUpdate: (tournamentId: string, newBracket: BracketRound[]) => Promise<void>;
     onFinalWinner: (tournament: Tournament, winningTeam: BracketTeam) => Promise<void>;
+    onBracketReset: (tournamentId: string) => Promise<void>;
 }) {
     const [bracket, setBracket] = useState<BracketRound[] | undefined>(undefined);
     const [isSaving, setIsSaving] = useState(false);
@@ -550,6 +572,12 @@ function BracketManagerDialog({
         } else {
             toast({ title: "Error", description: "Select a winner for the final match first.", variant: "destructive" });
         }
+    };
+    
+    const handleReset = async () => {
+        if (!tournament) return;
+        setIsSaving(true);
+        await onBracketReset(tournament.id);
     };
 
     if (!tournament) return null;
@@ -608,16 +636,21 @@ function BracketManagerDialog({
                     )}
                     </div>
                 </ScrollArea>
-                <DialogFooter className="gap-2">
-                    <Button onClick={handleDeclareFinalWinner} disabled={!canDeclareFinalWinner || isSaving}>
-                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Declare Final Winner
+                <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-2 pt-4">
+                    <Button variant="destructive" onClick={handleReset} disabled={isSaving}>
+                        <Trash2 className="mr-2 h-4 w-4" /> Reset Bracket
                     </Button>
-                    <Button variant="secondary" onClick={handleSaveChanges} disabled={isSaving}>
-                         {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Save Progress
-                    </Button>
-                    <DialogClose asChild><Button variant="outline" disabled={isSaving}>Close</Button></DialogClose>
+                    <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                        <DialogClose asChild><Button variant="outline" disabled={isSaving}>Close</Button></DialogClose>
+                        <Button variant="secondary" onClick={handleSaveChanges} disabled={isSaving}>
+                             {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Save Progress
+                        </Button>
+                        <Button onClick={handleDeclareFinalWinner} disabled={!canDeclareFinalWinner || isSaving}>
+                            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            <Award className="mr-2 h-4 w-4" /> Declare Final Winner
+                        </Button>
+                    </div>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
