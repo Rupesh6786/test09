@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -619,6 +620,50 @@ function BracketManagerDialog({
         }
     }, [isOpen, tournament]);
 
+    const allConfirmedTeams = useMemo(() => tournament?.confirmedTeams || [], [tournament]);
+    
+    const placedTeamNames = useMemo(() => {
+        if (!bracket || !bracket[0]) return new Set<string>();
+        const names = new Set<string>();
+        for (const matchup of bracket[0].matchups) {
+            if (matchup.team1) names.add(matchup.team1.teamName);
+            if (matchup.team2) names.add(matchup.team2.teamName);
+        }
+        return names;
+    }, [bracket]);
+
+    const handleTeamPlacement = (matchupIndex: number, teamSlot: 'team1' | 'team2', newTeamName: string) => {
+        if (!bracket) return;
+    
+        const newBracket = JSON.parse(JSON.stringify(bracket));
+        const newTeam = newTeamName === 'none' ? null : allConfirmedTeams.find(t => t.teamName === newTeamName);
+    
+        // Place the new team
+        newBracket[0].matchups[matchupIndex][teamSlot] = newTeam;
+    
+        // Reset progress from this matchup onwards
+        const resetProgressFrom = (bracketToReset: BracketRound[], roundIdx: number, matchupIdx: number) => {
+            // Clear current winner
+            bracketToReset[roundIdx].matchups[matchupIdx].winner = null;
+    
+            // Clear subsequent rounds
+            if (roundIdx + 1 < bracketToReset.length) {
+                const nextRoundIdx = roundIdx + 1;
+                const nextMatchupIdx = Math.floor(matchupIdx / 2);
+                const nextTeamSlot = matchupIdx % 2 === 0 ? 'team1' : 'team2';
+                
+                // Only clear and recurse if the slot was actually filled
+                if (bracketToReset[nextRoundIdx].matchups[nextMatchupIdx][nextTeamSlot]) {
+                    bracketToReset[nextRoundIdx].matchups[nextMatchupIdx][nextTeamSlot] = null;
+                    resetProgressFrom(bracketToReset, nextRoundIdx, nextMatchupIdx);
+                }
+            }
+        }
+    
+        resetProgressFrom(newBracket, 0, matchupIndex);
+        setBracket(newBracket);
+    };
+
     const handleWinnerSelect = (roundIndex: number, matchupIndex: number, winner: BracketTeam | null) => {
         if (!bracket || !winner) return;
     
@@ -687,17 +732,17 @@ function BracketManagerDialog({
         }
     };
 
-    const handleShuffleMatchups = async () => {
+    const handleRandomizeTeams = async () => {
         if (!tournament || !tournament.confirmedTeams) return;
-        if (!window.confirm("Are you sure you want to shuffle matchups? This will reset any current bracket progress.")) return;
+        if (!window.confirm("Are you sure you want to randomize matchups? This will override any manual placements.")) return;
         
         setIsSaving(true);
         try {
             const newBracket = generateInitialBracket(tournament.confirmedTeams, tournament.slotsTotal);
-            await onBracketUpdate(tournament.id, newBracket);
-            toast({ title: "Success", description: "Matchups have been shuffled." });
+            setBracket(newBracket);
+            toast({ title: "Success", description: "Teams have been randomized. Click 'Save Progress' to keep the changes." });
         } catch (error) {
-             toast({ title: "Error", description: "Failed to shuffle matchups.", variant: "destructive" });
+             toast({ title: "Error", description: "Failed to randomize teams.", variant: "destructive" });
         } finally {
             setIsSaving(false);
         }
@@ -734,7 +779,55 @@ function BracketManagerDialog({
                                             <Separator className="my-2" />
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 {round.matchups.map((matchup, matchupIndex) => (
-                                                    <Card key={matchupIndex} className="p-4 bg-muted/50">
+                                                    <Card key={matchupIndex} className="p-4 bg-muted/50 space-y-2">
+                                                        {roundIndex === 0 ? (
+                                                            <>
+                                                                <Select 
+                                                                    value={matchup.team1?.teamName || 'none'}
+                                                                    onValueChange={(teamName) => handleTeamPlacement(matchupIndex, 'team1', teamName)}
+                                                                    disabled={isSaving}
+                                                                >
+                                                                    <SelectTrigger className="h-8 text-sm">{matchup.team1?.teamName || 'Select Team 1'}</SelectTrigger>
+                                                                    <SelectContent>
+                                                                        <SelectItem value="none">-- Empty --</SelectItem>
+                                                                        {matchup.team1 && <SelectItem value={matchup.team1.teamName}>{matchup.team1.teamName}</SelectItem>}
+                                                                        {allConfirmedTeams
+                                                                            .filter(team => !placedTeamNames.has(team.teamName))
+                                                                            .map(team => <SelectItem key={team.teamName} value={team.teamName}>{team.teamName}</SelectItem>)
+                                                                        }
+                                                                    </SelectContent>
+                                                                </Select>
+                                                                <div className="text-center text-xs font-bold text-muted-foreground">VS</div>
+                                                                 <Select 
+                                                                    value={matchup.team2?.teamName || 'none'}
+                                                                    onValueChange={(teamName) => handleTeamPlacement(matchupIndex, 'team2', teamName)}
+                                                                    disabled={isSaving}
+                                                                >
+                                                                    <SelectTrigger className="h-8 text-sm">{matchup.team2?.teamName || 'Select Team 2'}</SelectTrigger>
+                                                                    <SelectContent>
+                                                                        <SelectItem value="none">-- Empty --</SelectItem>
+                                                                        {matchup.team2 && <SelectItem value={matchup.team2.teamName}>{matchup.team2.teamName}</SelectItem>}
+                                                                        {allConfirmedTeams
+                                                                            .filter(team => !placedTeamNames.has(team.teamName))
+                                                                            .map(team => <SelectItem key={team.teamName} value={team.teamName}>{team.teamName}</SelectItem>)
+                                                                        }
+                                                                    </SelectContent>
+                                                                </Select>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <div className={cn("flex items-center space-x-2 p-2 rounded-md", { 'bg-primary/20': matchup.winner?.teamName === matchup.team1?.teamName })}>
+                                                                    <p className="flex-1">{matchup.team1?.teamName || 'TBD'}</p>
+                                                                </div>
+                                                                <div className="text-center text-xs font-bold text-muted-foreground">VS</div>
+                                                                <div className={cn("flex items-center space-x-2 p-2 rounded-md", { 'bg-primary/20': matchup.winner?.teamName === matchup.team2?.teamName })}>
+                                                                    <p className="flex-1">{matchup.team2?.teamName || 'TBD'}</p>
+                                                                </div>
+                                                            </>
+                                                        )}
+
+                                                        <Separator className="my-1"/>
+                                                        <p className="text-xs text-center text-muted-foreground font-semibold">Select Winner</p>
                                                         <RadioGroup
                                                             value={matchup.winner?.teamName}
                                                             onValueChange={(teamName) => {
@@ -742,15 +835,15 @@ function BracketManagerDialog({
                                                                 handleWinnerSelect(roundIndex, matchupIndex, winner);
                                                             }}
                                                             disabled={!matchup.team1 || !matchup.team2 || isSaving}
+                                                            className="flex justify-around"
                                                         >
-                                                            <div className={cn("flex items-center space-x-2 p-2 rounded-md", { 'bg-primary/20': matchup.winner?.teamName === matchup.team1?.teamName })}>
+                                                            <div className="flex items-center space-x-2">
                                                                 <RadioGroupItem value={matchup.team1?.teamName || ''} id={`r${roundIndex}m${matchupIndex}t1`} />
-                                                                <Label htmlFor={`r${roundIndex}m${matchupIndex}t1`} className="flex-1 cursor-pointer">{matchup.team1?.teamName || 'TBD'}</Label>
+                                                                <Label htmlFor={`r${roundIndex}m${matchupIndex}t1`} className="cursor-pointer">{matchup.team1?.teamName || 'Team 1'}</Label>
                                                             </div>
-                                                            <div className="text-center text-xs font-bold text-muted-foreground">VS</div>
-                                                            <div className={cn("flex items-center space-x-2 p-2 rounded-md", { 'bg-primary/20': matchup.winner?.teamName === matchup.team2?.teamName })}>
+                                                            <div className="flex items-center space-x-2">
                                                                 <RadioGroupItem value={matchup.team2?.teamName || ''} id={`r${roundIndex}m${matchupIndex}t2`} />
-                                                                <Label htmlFor={`r${roundIndex}m${matchupIndex}t2`} className="flex-1 cursor-pointer">{matchup.team2?.teamName || 'TBD'}</Label>
+                                                                <Label htmlFor={`r${roundIndex}m${matchupIndex}t2`} className="cursor-pointer">{matchup.team2?.teamName || 'Team 2'}</Label>
                                                             </div>
                                                         </RadioGroup>
                                                     </Card>
@@ -795,8 +888,8 @@ function BracketManagerDialog({
                         <Button variant="destructive" onClick={handleReset} disabled={isSaving}>
                             <Trash2 className="mr-2 h-4 w-4" /> Reset Progress
                         </Button>
-                        <Button variant="outline" onClick={handleShuffleMatchups} disabled={isSaving}>
-                            <Shuffle className="mr-2 h-4 w-4" /> Shuffle Matchups
+                        <Button variant="outline" onClick={handleRandomizeTeams} disabled={isSaving}>
+                            <Shuffle className="mr-2 h-4 w-4" /> Randomize Teams
                         </Button>
                     </div>
                     <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
