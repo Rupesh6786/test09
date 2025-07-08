@@ -621,20 +621,23 @@ function BracketManagerDialog({
 
     const handleWinnerSelect = (roundIndex: number, matchupIndex: number, winner: BracketTeam | null) => {
         if (!bracket || !winner) return;
-
-        const newBracket = [...bracket];
+    
+        // Create a deep copy to avoid state mutation issues.
+        const newBracket = JSON.parse(JSON.stringify(bracket));
         const currentMatchup = newBracket[roundIndex].matchups[matchupIndex];
         
-        if(currentMatchup.winner?.teamName === winner.teamName) return;
-
+        // If the winner is already selected, do nothing.
+        if (currentMatchup.winner?.teamName === winner.teamName) return;
+    
         currentMatchup.winner = winner;
-
+    
+        // Propagate the winner to the next round
         if (roundIndex + 1 < newBracket.length) {
             const nextRoundMatchupIndex = Math.floor(matchupIndex / 2);
             const teamSlot = matchupIndex % 2 === 0 ? 'team1' : 'team2';
             newBracket[roundIndex + 1].matchups[nextRoundMatchupIndex][teamSlot] = winner;
         }
-
+    
         setBracket(newBracket);
     };
     
