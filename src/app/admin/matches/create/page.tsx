@@ -210,15 +210,14 @@ export default function ManageMatchesPage() {
         if (!window.confirm("Are you sure you want to reset bracket progress? This will clear all match results but keep the current team matchups.")) return;
 
         const tournamentToReset = tournaments.find(t => t.id === tournamentId);
-        if (!tournamentToReset || !tournamentToReset.bracket) {
+        if (!tournamentToReset || !tournamentToReset.confirmedTeams) {
             toast({ title: "Error", description: "Cannot reset progress, bracket not found.", variant: "destructive" });
             return;
         }
 
         const docRef = doc(db, "tournaments", tournamentId);
         try {
-            // Re-generate bracket using existing teams to clear winners.
-            const resetBracket = generateInitialBracket(tournamentToReset.confirmedTeams || [], tournamentToReset.slotsTotal);
+            const resetBracket = generateInitialBracket(tournamentToReset.confirmedTeams, tournamentToReset.slotsTotal);
             await updateDoc(docRef, { bracket: resetBracket });
             toast({ title: "Success", description: "Bracket progress has been reset." });
             await fetchTournaments();
@@ -229,26 +228,37 @@ export default function ManageMatchesPage() {
     };
     
     const handleRemoveTeam = async (tournamentId: string, teamToRemove: BracketTeam) => {
-        if (!window.confirm(`Are you sure you want to remove ${teamToRemove.teamName} from the tournament? This action will also remove their registration entry.`)) return;
-
+        if (!window.confirm(`Are you sure you want to remove ${teamToRemove.teamName} from the tournament? This action will remove their registration entry and reset the bracket.`)) return;
+    
         const tournamentRef = doc(db, "tournaments", tournamentId);
         const registrationsRef = collection(db, 'registrations');
         const q = query(registrationsRef, where('tournamentId', '==', tournamentId), where('teamName', '==', teamToRemove.teamName), limit(1));
-
+    
         try {
             const regSnapshot = await getDocs(q);
             const registrationDoc = regSnapshot.docs.length > 0 ? regSnapshot.docs[0] : null;
-
+    
             await runTransaction(db, async (transaction) => {
                 const tournamentDoc = await transaction.get(tournamentRef);
                 if (!tournamentDoc.exists()) {
                     throw new Error("Tournament not found!");
                 }
-
-                // Remove team and decrement slot count in the tournament doc
+    
+                const currentTournamentData = tournamentDoc.data() as Tournament;
+    
+                // Filter out the team to remove
+                const newConfirmedTeams = (currentTournamentData.confirmedTeams || []).filter(
+                    (team) => team.teamName !== teamToRemove.teamName
+                );
+    
+                // Regenerate the entire bracket with the updated team list
+                const newBracket = generateInitialBracket(newConfirmedTeams, currentTournamentData.slotsTotal);
+                
+                // Update tournament doc with new teams list, decremented slot count, and the newly generated bracket
                 transaction.update(tournamentRef, {
                     slotsAllotted: increment(-1),
-                    confirmedTeams: arrayRemove(teamToRemove)
+                    confirmedTeams: newConfirmedTeams,
+                    bracket: newBracket
                 });
                 
                 // Also delete the registration document to maintain data consistency
@@ -256,8 +266,8 @@ export default function ManageMatchesPage() {
                     transaction.delete(registrationDoc.ref);
                 }
             });
-
-            toast({ title: "Team Removed", description: `${teamToRemove.teamName} has been removed.` });
+    
+            toast({ title: "Team Removed", description: `${teamToRemove.teamName} has been removed and the bracket has been updated.` });
             await fetchTournaments(); // Refresh data to update the dialog via the useEffect hook
         } catch (error: any) {
             console.error("Error removing team: ", error);
