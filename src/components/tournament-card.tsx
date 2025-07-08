@@ -28,12 +28,14 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
   const isFull = slotsLeft <= 0;
 
   // This is a more robust way to check if the tournament is locked.
-  // It avoids potential timezone issues by comparing date strings directly.
+  // It compares date objects in the user's local timezone.
   let isUpcomingAndLocked = false;
   if (tournament.status === 'Upcoming' && tournament.startDate) {
     try {
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-      if (tournament.startDate > today) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Set to beginning of today for accurate comparison
+      const startDate = new Date(tournament.startDate);
+      if (startDate > today) {
         isUpcomingAndLocked = true;
       }
     } catch (e) {
@@ -53,15 +55,6 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
   };
 
   const getButton = () => {
-    if (isUpcomingAndLocked) {
-      return (
-        <Button disabled className="w-full font-bold">
-          <Calendar className="w-4 h-4 mr-2" />
-          Starts on {tournament.startDate}
-        </Button>
-      );
-    }
-    
     if (isFull && tournament.status === 'Upcoming') {
         return (
             <Button disabled className="w-full font-bold">
@@ -71,6 +64,8 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
         );
     }
     
+    // For all other cases (including locked, upcoming, and ongoing), show the "Register Now" button.
+    // The link will always take the user to the registration page.
     return (
       <Button asChild className="w-full bg-primary/90 text-primary-foreground hover:bg-primary font-bold transition-all hover:shadow-lg hover:box-shadow-primary">
         <Link href={`/tournaments/${tournament.id}/register`}>Register Now</Link>
