@@ -1,4 +1,3 @@
-
 "use client";
 
 import { cn } from "@/lib/utils";
@@ -81,20 +80,82 @@ function Round({ round, isLastRound }: { round: BracketRound; isLastRound: boole
   );
 }
 
-export function TournamentBracket({ tournament }: { tournament: Tournament }) {
-  const { bracket, status } = tournament;
 
-  if (!bracket || bracket.length === 0) {
+const getRoundTitle = (matchupCount: number) => {
+    if (matchupCount === 1) return 'Finals';
+    if (matchupCount === 2) return 'Semi-Finals';
+    if (matchupCount === 4) return 'Quarter-Finals';
+    if (matchupCount === 8) return 'Round of 16';
+    return `Round of ${matchupCount * 2}`;
+};
+
+const generatePlaceholderBracket = (teams: BracketTeam[], slotsTotal: number): BracketRound[] => {
+    let rounds: BracketRound[] = [];
+    let currentTeams: (BracketTeam | null)[] = [...(teams || [])];
+
+    const validSlots = [2, 4, 8, 16, 32];
+    if (!validSlots.includes(slotsTotal)) {
+        return [];
+    }
+
+    while (currentTeams.length < slotsTotal) {
+        currentTeams.push(null);
+    }
+
+    let firstRoundMatchups: BracketMatchup[] = [];
+    for (let i = 0; i < currentTeams.length; i += 2) {
+        firstRoundMatchups.push({
+            team1: currentTeams[i],
+            team2: currentTeams[i+1],
+            winner: null
+        });
+    }
+    rounds.push({
+        title: getRoundTitle(firstRoundMatchups.length),
+        matchups: firstRoundMatchups
+    });
+
+    let numberOfMatchups = firstRoundMatchups.length / 2;
+    while (numberOfMatchups >= 1) {
+        const matchups: BracketMatchup[] = [];
+        for (let i = 0; i < numberOfMatchups; i++) {
+            matchups.push({
+                team1: null,
+                team2: null,
+                winner: null
+            });
+        }
+        rounds.push({
+            title: getRoundTitle(matchups.length),
+            matchups: matchups
+        });
+        numberOfMatchups /= 2;
+    }
+
+    return rounds;
+};
+
+
+export function TournamentBracket({ tournament }: { tournament: Tournament }) {
+  const { status } = tournament;
+
+  const displayBracket = React.useMemo(() => {
+    if (tournament.bracket && tournament.bracket.length > 0) {
+      return tournament.bracket;
+    }
+    return generatePlaceholderBracket(tournament.confirmedTeams || [], tournament.slotsTotal);
+  }, [tournament.bracket, tournament.confirmedTeams, tournament.slotsTotal]);
+
+  if (!displayBracket || displayBracket.length === 0) {
     return (
       <div className="w-full bg-card text-card-foreground rounded-lg p-8 flex flex-col items-center justify-center h-96 border">
-        <p className="text-muted-foreground">The bracket will be generated once the tournament starts.</p>
+        <p className="text-muted-foreground">The bracket is being prepared.</p>
         <p className="text-muted-foreground text-sm">Confirmed Teams: {tournament.confirmedTeams?.length || 0} / {tournament.slotsTotal}</p>
       </div>
     );
   }
 
-  const finalWinner = status === 'Completed' ? <WinnerDisplay tournament={tournament} /> : null;
-  const isFinals = bracket.length > 0 && bracket[bracket.length - 1].matchups.length === 1;
+  const isFinals = displayBracket.length > 0 && displayBracket[displayBracket.length - 1].matchups.length === 1;
 
   return (
     <div className="w-full bg-card/50 text-foreground rounded-lg p-4 md:p-8 flex flex-col items-center font-body border">
@@ -105,8 +166,8 @@ export function TournamentBracket({ tournament }: { tournament: Tournament }) {
       {/* Desktop View */}
       <div className="hidden md:flex w-full overflow-x-auto pb-4 justify-center">
           <div className="flex items-start min-w-max mx-auto">
-              {bracket.map((round, index) => (
-                  <Round key={round.title} round={round} isLastRound={index === bracket.length - 1} />
+              {displayBracket.map((round, index) => (
+                  <Round key={round.title} round={round} isLastRound={index === displayBracket.length - 1} />
               ))}
               {isFinals && (
                 <div className="flex flex-col items-center justify-center ml-12 self-center">
@@ -118,8 +179,8 @@ export function TournamentBracket({ tournament }: { tournament: Tournament }) {
 
       {/* Mobile View */}
       <div className="w-full md:hidden flex flex-col items-center gap-6">
-          {bracket.map((round, index) => (
-              <Round key={`mobile-${round.title}`} round={round} isLastRound={index === bracket.length - 1} />
+          {displayBracket.map((round, index) => (
+              <Round key={`mobile-${round.title}`} round={round} isLastRound={index === displayBracket.length - 1} />
           ))}
           {isFinals && (
             <div className="w-full flex flex-col items-center mt-4">
