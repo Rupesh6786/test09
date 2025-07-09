@@ -15,7 +15,7 @@ import { collection, getDocs, query, where, limit } from 'firebase/firestore';
 import type { Tournament } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
-import { UserCheck, ShieldCheck, Zap } from 'lucide-react';
+import { UserCheck, ShieldCheck, Zap, Gamepad2, Trophy, Users, Award } from 'lucide-react';
 
 export default function Home() {
   return (
@@ -25,6 +25,7 @@ export default function Home() {
         <HeroSection />
         <TournamentsSection />
         <WhyChooseUsSection />
+        <LiveStatsSection />
         <TestimonialsSection />
       </main>
       <Footer />
@@ -167,6 +168,37 @@ function WhyChooseUsSection() {
             <h3 className="text-xl font-bold mb-2">Anti-Cheat System</h3>
             <p className="text-muted-foreground">Fair play only. Top-notch security and monitoring.</p>
           </Card>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function StatCard({ icon, value, label }: { icon: React.ReactNode, value: string, label: string }) {
+  return (
+    <Card className="bg-card/80 backdrop-blur-sm border-border/50 p-6 transform transition-all duration-300 hover:scale-105 hover:-translate-y-2 hover:shadow-lg hover:shadow-primary/20 text-center">
+      <div className="flex justify-center mb-4">
+        {icon}
+      </div>
+      <p className="text-3xl lg:text-4xl font-bold text-foreground">{value}</p>
+      <p className="text-muted-foreground mt-1">{label}</p>
+    </Card>
+  );
+}
+
+function LiveStatsSection() {
+  return (
+    <section className="py-16 md:py-24 bg-background">
+      <div className="container mx-auto px-4">
+        <div className="text-center mb-12">
+          <h2 className="font-headline text-3xl md:text-4xl font-bold uppercase tracking-wider text-primary text-shadow-primary">Live Stats</h2>
+          <p className="text-lg text-muted-foreground mt-2">The Pulse of the Arena</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StatCard icon={<Gamepad2 className="w-12 h-12 text-primary text-shadow-primary" />} value="20,000+" label="Matches Played" />
+          <StatCard icon={<Trophy className="w-12 h-12 text-primary text-shadow-primary" />} value="₹1,50,000+" label="Prize Money Won" />
+          <StatCard icon={<Users className="w-12 h-12 text-primary text-shadow-primary" />} value="10,000+" label="Registered Players" />
+          <StatCard icon={<Award className="w-12 h-12 text-primary text-shadow-primary" />} value="100+" label="Weekly Tournaments" />
         </div>
       </div>
     </section>
