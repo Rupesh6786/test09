@@ -297,10 +297,10 @@ export default function AdminDashboardPage() {
                         registrations.slice(0, 5).map(reg => (
                             <div key={reg.id} className="p-4 bg-muted/50 rounded-lg border">
                                 <div className="flex justify-between items-start gap-4">
-                                    <div className="flex-grow overflow-hidden">
+                                    <div className="flex-grow overflow-hidden min-w-0">
                                         <p className="font-bold truncate">{reg.tournamentTitle}</p>
                                         <p className="text-sm text-muted-foreground truncate">{reg.userEmail}</p>
-                                        <p className="text-xs text-muted-foreground font-mono truncate">Game UIDs: {(reg.gameIds || []).join(', ')}</p>
+                                        <p className="text-xs text-muted-foreground font-mono break-all">Game UIDs: {(reg.gameIds || []).join(', ')}</p>
                                     </div>
                                     <Badge variant={reg.paymentStatus === 'Confirmed' ? 'success' : 'warning'} className="shrink-0">{reg.paymentStatus}</Badge>
                                 </div>
