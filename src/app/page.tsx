@@ -133,64 +133,51 @@ function TournamentsSection() {
   );
 }
 
-function HowItWorksCard({ icon, step, title, description }: { icon: React.ReactNode, step: string, title: string, description: string }) {
-    return (
-        <Card className="relative text-center p-8 bg-card/80 backdrop-blur-sm border-t-4 border-primary rounded-lg shadow-lg transform transition-transform duration-300 hover:-translate-y-2 overflow-hidden">
-            {/* The circle on the connecting line for desktop */}
-            <div className="hidden lg:flex absolute top-0 left-1/2 w-8 h-8 bg-background rounded-full border-4 border-primary/30 -translate-x-1/2 -translate-y-1/2 items-center justify-center">
-                 <div className="w-3 h-3 bg-primary rounded-full" />
-            </div>
-            <div className="absolute -top-4 -right-4 font-headline text-8xl font-bold text-primary/5 -z-10">
-                {step}
-            </div>
-            <div className="relative mt-4 mb-4 inline-block">
-                 <div className="p-4 bg-primary/20 rounded-full">
-                    {icon}
-                </div>
-            </div>
-            <h3 className="text-xl font-bold mb-2 text-foreground">{title}</h3>
-            <p className="text-muted-foreground text-sm">{description}</p>
-        </Card>
-    );
-}
-
 function HowItWorksSection() {
   return (
     <section id="how-it-works" className="py-16 md:py-24 bg-muted/40">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-16">
+        <div className="text-center mb-12">
           <h2 className="font-headline text-3xl md:text-4xl font-bold uppercase tracking-wider text-primary text-shadow-primary">How It Works</h2>
           <p className="text-lg text-muted-foreground mt-2">Your Path to Victory in 4 Simple Steps</p>
         </div>
-        <div className="relative max-w-5xl mx-auto">
-          {/* Connecting line for desktop */}
-          <div className="hidden lg:block absolute top-1/2 left-0 w-full h-0.5 bg-primary/20 -translate-y-1/2" />
-          <div className="relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <HowItWorksCard
-              step="01"
-              title="Register"
-              description="Create your free BattleBucks account to get started."
-              icon={<UserPlus className="w-8 h-8 text-primary" />}
-            />
-            <HowItWorksCard
-              step="02"
-              title="Join a Match"
-              description="Browse tournaments and pay the entry fee to secure your slot."
-              icon={<LogIn className="w-8 h-8 text-primary" />}
-            />
-            <HowItWorksCard
-              step="03"
-              title="Play & Compete"
-              description="You'll receive match credentials. Play with skill and dominate."
-              icon={<Gamepad2 className="w-8 h-8 text-primary" />}
-            />
-            <HowItWorksCard
-              step="04"
-              title="Win & Withdraw"
-              description="Winnings are credited to your wallet. Withdraw anytime."
-              icon={<Trophy className="w-8 h-8 text-primary" />}
-            />
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <Card className="text-center p-6 bg-card/80 backdrop-blur-sm border-border/50 transform transition-all duration-300 hover:scale-105 hover:-translate-y-1 hover:shadow-lg">
+            <div className="flex justify-center mb-4">
+              <div className="p-4 bg-primary/20 rounded-full">
+                <UserPlus className="w-8 h-8 text-primary" />
+              </div>
+            </div>
+            <h3 className="text-xl font-bold mb-2">1. Register</h3>
+            <p className="text-muted-foreground">Create your account to get started.</p>
+          </Card>
+          <Card className="text-center p-6 bg-card/80 backdrop-blur-sm border-border/50 transform transition-all duration-300 hover:scale-105 hover:-translate-y-1 hover:shadow-lg">
+            <div className="flex justify-center mb-4">
+              <div className="p-4 bg-primary/20 rounded-full">
+                <LogIn className="w-8 h-8 text-primary" />
+              </div>
+            </div>
+            <h3 className="text-xl font-bold mb-2">2. Join a Match</h3>
+            <p className="text-muted-foreground">Browse tournaments and secure your slot.</p>
+          </Card>
+          <Card className="text-center p-6 bg-card/80 backdrop-blur-sm border-border/50 transform transition-all duration-300 hover:scale-105 hover:-translate-y-1 hover:shadow-lg">
+            <div className="flex justify-center mb-4">
+              <div className="p-4 bg-primary/20 rounded-full">
+                <Gamepad2 className="w-8 h-8 text-primary" />
+              </div>
+            </div>
+            <h3 className="text-xl font-bold mb-2">3. Play & Compete</h3>
+            <p className="text-muted-foreground">Receive credentials, play with skill, and dominate.</p>
+          </Card>
+          <Card className="text-center p-6 bg-card/80 backdrop-blur-sm border-border/50 transform transition-all duration-300 hover:scale-105 hover:-translate-y-1 hover:shadow-lg">
+            <div className="flex justify-center mb-4">
+              <div className="p-4 bg-primary/20 rounded-full">
+                <Trophy className="w-8 h-8 text-primary" />
+              </div>
+            </div>
+            <h3 className="text-xl font-bold mb-2">4. Win & Withdraw</h3>
+            <p className="text-muted-foreground">Winnings are credited to your wallet.</p>
+          </Card>
         </div>
       </div>
     </section>
