@@ -1,8 +1,8 @@
-
 "use client";
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 import { onAuthStateChanged, signOut, type User as FirebaseUser } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
@@ -17,7 +17,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useRouter } from 'next/navigation';
 import { ThemeToggle } from '../theme-toggle';
 import { cn } from '@/lib/utils';
 import type { UserProfileData } from '@/lib/data';
@@ -31,11 +30,14 @@ const navLinks = [
   { href: '/contact', label: 'Contact' },
 ];
 
+const ADMIN_UID = 'ymwd0rW1wnNZkYlUR7cUi9dkd452';
+
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [authUser, setAuthUser] = useState<FirebaseUser | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfileData | null>(null);
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     let firestoreUnsubscribe: Unsubscribe | null = null;
@@ -69,6 +71,14 @@ export function Header() {
     };
   }, []);
 
+  useEffect(() => {
+    // If the user is the admin and they are on a public-facing page,
+    // redirect them to their dashboard to prevent confusion.
+    if (authUser?.uid === ADMIN_UID && !pathname.startsWith('/admin')) {
+        router.push('/admin/dashboard');
+    }
+  }, [authUser, pathname, router]);
+
   const handleLogout = async () => {
     await signOut(auth);
     router.push('/');
@@ -91,6 +101,11 @@ export function Header() {
   }
   
   const photoURL = userProfile?.photoURL || authUser?.photoURL;
+  
+  // If we are redirecting the admin, don't render the header to avoid a flash of content.
+  if (authUser?.uid === ADMIN_UID && !pathname.startsWith('/admin')) {
+    return null;
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
