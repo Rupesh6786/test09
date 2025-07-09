@@ -113,7 +113,13 @@ export type Community = {
   creatorId: string;
   createdAt: Timestamp;
   memberIds: string[];
+  roles?: { [key: string]: 'Leader' | 'Co-Leader' | 'Member' | 'Strategist' | 'Sniper' | 'Rusher' | 'Support' };
+  announcements?: { text: string; date: string; author: string }[];
+  achievements?: { title: string; icon: 'Trophy' | 'Flame' | 'Star' }[];
+  events?: { title: string; date: string }[];
+  joinRequests?: { userId: string; userName: string; userAvatar?: string }[];
 };
+
 
 export type CommunityMessage = {
   id: string;
