@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -205,7 +204,7 @@ export default function AdminDashboardPage() {
                         <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
                         <DollarSign className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
-                    <CardContent><div className="text-xl md:text-2xl font-bold">₹{stats.totalRevenue.toLocaleString()}</div></CardContent>
+                    <CardContent><div className="text-xl lg:text-2xl font-bold">₹{stats.totalRevenue.toLocaleString()}</div></CardContent>
                 </Card>
             </Link>
             <Link href="/admin/users">
@@ -214,7 +213,7 @@ export default function AdminDashboardPage() {
                         <CardTitle className="text-sm font-medium">Total Players</CardTitle>
                         <Users className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
-                    <CardContent><div className="text-xl md:text-2xl font-bold">{stats.totalPlayers}</div></CardContent>
+                    <CardContent><div className="text-xl lg:text-2xl font-bold">{stats.totalPlayers}</div></CardContent>
                 </Card>
             </Link>
             <Link href="/admin/matches/create">
@@ -223,7 +222,7 @@ export default function AdminDashboardPage() {
                         <CardTitle className="text-sm font-medium">Live Tournaments</CardTitle>
                         <Trophy className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
-                    <CardContent><div className="text-xl md:text-2xl font-bold">{stats.liveTournaments}</div></CardContent>
+                    <CardContent><div className="text-xl lg:text-2xl font-bold">{stats.liveTournaments}</div></CardContent>
                 </Card>
             </Link>
              <Card>
@@ -232,7 +231,7 @@ export default function AdminDashboardPage() {
                     <Award className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-xl md:text-2xl font-bold">SniperQueen</div>
+                    <div className="text-xl lg:text-2xl font-bold">SniperQueen</div>
                     <p className="text-xs text-muted-foreground">in Free Fire Frenzy</p>
                 </CardContent>
             </Card>
@@ -253,8 +252,8 @@ export default function AdminDashboardPage() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Tournament</TableHead>
-                                <TableHead>User Email</TableHead>
-                                <TableHead>Game UIDs</TableHead>
+                                <TableHead className="max-w-[200px]">User Email</TableHead>
+                                <TableHead className="max-w-[200px]">Game UIDs</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead className="text-right">Action</TableHead>
                             </TableRow>
@@ -268,8 +267,8 @@ export default function AdminDashboardPage() {
                                 registrations.slice(0, 5).map(reg => (
                                     <TableRow key={reg.id}>
                                         <TableCell className="font-medium">{reg.tournamentTitle}</TableCell>
-                                        <TableCell>{reg.userEmail}</TableCell>
-                                        <TableCell className="font-mono">{(reg.gameIds || []).join(', ')}</TableCell>
+                                        <TableCell className="truncate">{reg.userEmail}</TableCell>
+                                        <TableCell className="font-mono truncate">{(reg.gameIds || []).join(', ')}</TableCell>
                                         <TableCell>
                                              <Badge variant={reg.paymentStatus === 'Confirmed' ? 'success' : 'warning'}>
                                                 {reg.paymentStatus}
@@ -300,16 +299,16 @@ export default function AdminDashboardPage() {
                                 <div className="flex justify-between items-start gap-4">
                                     <div>
                                         <p className="font-bold">{reg.tournamentTitle}</p>
-                                        <p className="text-sm text-muted-foreground">{reg.userEmail}</p>
-                                        <p className="text-xs text-muted-foreground font-mono">Game UIDs: {(reg.gameIds || []).join(', ')}</p>
+                                        <p className="text-sm text-muted-foreground truncate">{reg.userEmail}</p>
+                                        <p className="text-xs text-muted-foreground font-mono truncate">Game UIDs: {(reg.gameIds || []).join(', ')}</p>
                                     </div>
                                     <Badge variant={reg.paymentStatus === 'Confirmed' ? 'success' : 'warning'} className="shrink-0">{reg.paymentStatus}</Badge>
                                 </div>
                                 <div className="mt-4 pt-4 border-t border-muted-foreground/20 flex justify-end">
                                     {reg.paymentStatus === 'Pending' ? (
-                                        <Button size="sm" onClick={() => handleConfirmPayment(reg)}>Confirm Payment</Button>
+                                        <Button size="sm" onClick={() => handleConfirmPayment(reg)}>Confirm</Button>
                                     ) : (
-                                        <Button variant="secondary" size="sm" onClick={() => handleMarkAsPending(reg)}>Mark as Unpaid</Button>
+                                        <Button variant="secondary" size="sm" onClick={() => handleMarkAsPending(reg)}>Mark Unpaid</Button>
                                     )}
                                 </div>
                             </div>
