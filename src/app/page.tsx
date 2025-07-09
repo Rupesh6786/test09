@@ -15,7 +15,7 @@ import { collection, getDocs, query, where, limit } from 'firebase/firestore';
 import type { Tournament } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
-import { UserCheck, ShieldCheck, Zap, Gamepad2, Trophy, Users, Award } from 'lucide-react';
+import { UserCheck, ShieldCheck, Zap, Gamepad2, Trophy, Users, Award, UserPlus, LogIn } from 'lucide-react';
 
 export default function Home() {
   return (
@@ -24,6 +24,7 @@ export default function Home() {
       <main className="flex-1">
         <HeroSection />
         <TournamentsSection />
+        <HowItWorksSection />
         <WhyChooseUsSection />
         <LiveStatsSection />
         <TestimonialsSection />
@@ -132,9 +133,64 @@ function TournamentsSection() {
   );
 }
 
+function InfoStepCard({ icon, step, title, description }: { icon: React.ReactNode, step: string, title: string, description: string }) {
+    return (
+        <Card className="bg-card/80 backdrop-blur-sm border-border/50 text-center p-6 transform transition-all duration-300 hover:scale-105 hover:-translate-y-1 hover:shadow-lg">
+            <div className="flex justify-center mb-4">
+                <div className="p-4 bg-primary/20 rounded-full">
+                    {icon}
+                </div>
+            </div>
+            <p className="font-bold text-primary text-sm uppercase">{step}</p>
+            <h3 className="text-xl font-bold mb-2">{title}</h3>
+            <p className="text-muted-foreground text-sm">{description}</p>
+        </Card>
+    );
+}
+
+function HowItWorksSection() {
+  return (
+    <section id="how-it-works" className="py-16 md:py-24 bg-muted/40">
+      <div className="container mx-auto px-4">
+        <div className="text-center mb-12">
+          <h2 className="font-headline text-3xl md:text-4xl font-bold uppercase tracking-wider text-primary text-shadow-primary">How It Works</h2>
+          <p className="text-lg text-muted-foreground mt-2">Your Path to Victory in 4 Simple Steps</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <InfoStepCard
+            icon={<UserPlus className="w-8 h-8 text-primary" />}
+            step="Step 1"
+            title="Register"
+            description="Create your free BattleBucks account to get started."
+          />
+          <InfoStepCard
+            icon={<LogIn className="w-8 h-8 text-primary" />}
+            step="Step 2"
+            title="Join a Match"
+            description="Browse tournaments and pay the entry fee to secure your slot."
+          />
+          <InfoStepCard
+            icon={<Gamepad2 className="w-8 h-8 text-primary" />}
+            step="Step 3"
+            title="Play & Compete"
+            description="You'll receive match credentials. Play with skill and dominate."
+          />
+          <InfoStepCard
+            icon={<Trophy className="w-8 h-8 text-primary" />}
+            step="Step 4"
+            title="Win & Withdraw"
+            description="Winnings are credited to your wallet. Withdraw anytime."
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+
 function WhyChooseUsSection() {
   return (
-    <section className="bg-muted/40 py-16 md:py-24">
+    <section className="py-16 md:py-24">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <h2 className="font-headline text-3xl md:text-4xl font-bold uppercase tracking-wider text-accent text-shadow-accent">Why Choose Us?</h2>
