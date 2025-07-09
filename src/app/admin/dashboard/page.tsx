@@ -21,7 +21,6 @@ type Registration = {
     userEmail: string;
     teamName: string;
     gameIds: string[];
-    upiId: string;
     paymentStatus: 'Pending' | 'Confirmed';
 };
 
@@ -298,8 +297,8 @@ export default function AdminDashboardPage() {
                         registrations.slice(0, 5).map(reg => (
                             <div key={reg.id} className="p-4 bg-muted/50 rounded-lg border">
                                 <div className="flex justify-between items-start gap-4">
-                                    <div>
-                                        <p className="font-bold">{reg.tournamentTitle}</p>
+                                    <div className="flex-grow overflow-hidden">
+                                        <p className="font-bold truncate">{reg.tournamentTitle}</p>
                                         <p className="text-sm text-muted-foreground truncate">{reg.userEmail}</p>
                                         <p className="text-xs text-muted-foreground font-mono truncate">Game UIDs: {(reg.gameIds || []).join(', ')}</p>
                                     </div>
