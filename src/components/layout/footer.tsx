@@ -34,7 +34,7 @@ export function Footer() {
             <h3 className="font-headline text-lg font-bold text-primary">Connect With Us</h3>
             <div className="flex justify-center md:justify-start items-center space-x-4 mt-2">
                 <Link href="https://x.com/ARCubers?s=09" target="_blank" rel="noopener noreferrer"><Twitter className="h-6 w-6 text-muted-foreground hover:text-primary" /></Link>
-                <Link href="https://www.instagram.com/rupesh.devp/" target="_blank" rel="noopener noreferrer"><Instagram className="h-6 w-6 text-muted-foreground hover:text-primary" /></Link>
+                <Link href="https://www.instagram.com/battlebucks.arena/" target="_blank" rel="noopener noreferrer"><Instagram className="h-6 w-6 text-muted-foreground hover:text-primary" /></Link>
                 <Link href="https://www.facebook.com/share/1FcLATe9kX/" target="_blank" rel="noopener noreferrer"><Facebook className="h-6 w-6 text-muted-foreground hover:text-primary" /></Link>
                 <Link href="#" target="_blank" rel="noopener noreferrer"><Youtube className="h-6 w-6 text-muted-foreground hover:text-primary" /></Link>
             </div>
