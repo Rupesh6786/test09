@@ -109,12 +109,12 @@ export default function LoginPage() {
         // Grid effect pseudo-element
         "after:absolute after:inset-0 after:z-0",
         "after:bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)]",
-        "after:bg-[size:2rem_2rem] after:opacity-40",
-        "after:[mask-image:radial-gradient(600px_circle_at_var(--mouse-x)_var(--mouse-y),black,transparent)]",
+        "after:bg-[size:2rem_2rem] after:opacity-50",
+        "after:[mask-image:radial-gradient(1000px_circle_at_var(--mouse-x)_var(--mouse-y),black,transparent)]",
 
         // Spotlight effect pseudo-element
         "before:absolute before:inset-0 before:z-0",
-        "before:bg-[radial-gradient(400px_circle_at_var(--mouse-x)_var(--mouse-y),hsla(var(--primary)/0.25),transparent_80%)]"
+        "before:bg-[radial-gradient(800px_circle_at_var(--mouse-x)_var(--mouse-y),hsla(var(--primary)/0.25),transparent_80%)]"
       )}
     >
       <Card className="w-full max-w-md bg-card/80 backdrop-blur-sm border-border/50 z-10">
