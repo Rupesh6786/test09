@@ -21,7 +21,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThemeToggle } from '../theme-toggle';
 import { cn } from '@/lib/utils';
 import type { UserProfileData } from '@/lib/data';
-import { BattlestacksLogo } from '../icons/battlestacks-logo';
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -113,7 +112,7 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto flex h-16 max-w-screen-2xl items-center justify-between px-4">
         <Link href="/" className="flex items-center space-x-2">
-          <BattlestacksLogo className="h-8 w-8" />
+          
           <span className="text-xl font-bold tracking-wider text-primary font-headline">BattleStacks</span>
         </Link>
 

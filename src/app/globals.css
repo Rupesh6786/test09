@@ -94,10 +94,6 @@
     animation: ticker 40s linear infinite;
   }
 
-  .animate-flame {
-    animation: flame 2.5s ease-in-out infinite alternate;
-  }
-  
   .rank-gold-glow {
     animation: gold-glow 2s ease-in-out infinite alternate;
   }
@@ -116,18 +112,6 @@
     }
     100% {
       transform: translateX(-100%);
-    }
-  }
-
-  @keyframes flame {
-    0% {
-      transform: scaleY(1) skewX(0);
-    }
-    50% {
-      transform: scaleY(1.05) skewX(2deg);
-    }
-    100% {
-      transform: scaleY(1) skewX(-2deg);
     }
   }
 
