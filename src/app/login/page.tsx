@@ -1,8 +1,9 @@
+
 "use client";
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -14,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { auth } from '@/lib/firebase';
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
@@ -28,18 +30,38 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' },
   });
 
+   useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      const container = containerRef.current;
+      if (container) {
+        const { left, top, width, height } = container.getBoundingClientRect();
+        const x = e.clientX - left;
+        const y = e.clientY - top;
+        container.style.setProperty('--mouse-x', `${x}px`);
+        container.style.setProperty('--mouse-y', `${y}px`);
+      }
+    };
+    
+    const container = containerRef.current;
+    container?.addEventListener('mousemove', handleMouseMove);
+
+    return () => {
+      container?.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []);
+
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
       
-      // Check for email verification
       if (!userCredential.user.emailVerified && userCredential.user.uid !== ADMIN_UID) {
         await signOut(auth);
         toast({
@@ -80,8 +102,16 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4 bg-background">
-      <Card className="w-full max-w-md bg-card/80 backdrop-blur-sm border-border/50">
+    <div
+      ref={containerRef}
+      className={cn(
+        "relative flex min-h-screen items-center justify-center p-4 overflow-hidden bg-background",
+        // This ::before pseudo-element creates the spotlight effect
+        "before:absolute before:inset-0 before:z-0",
+        "before:bg-[radial-gradient(400px_at_var(--mouse-x)_var(--mouse-y),hsla(var(--primary)/0.15),transparent_80%)]"
+      )}
+    >
+      <Card className="w-full max-w-md bg-card/80 backdrop-blur-sm border-border/50 z-10">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-bold">Welcome Back</CardTitle>
           <CardDescription>Enter the arena.</CardDescription>
