@@ -36,7 +36,7 @@ type InquiryFormValues = z.infer<typeof inquirySchema>;
 
 const faqs = [
     {
-        question: "How do I join a tournament on BattleBucks?",
+        question: "How do I join a tournament on BattleStacks?",
         answer: "To join a tournament, first, create an account and log in. Then, browse the \"Tournaments\" page, select a match you want to join, and click \"Register.\" You'll be prompted to pay the entry fee via UPI. Once payment is confirmed by our team, your slot is secured."
     },
     {
@@ -45,19 +45,19 @@ const faqs = [
     },
     {
         question: "How can I withdraw my winnings?",
-        answer: "Your winnings are automatically credited to your BattleBucks wallet after the tournament results are verified. You can go to your \"Wallet\" page, click on \"Redeem Winnings,\" and enter the amount you wish to withdraw. The funds will be transferred to your registered UPI ID/bank account within 24-48 hours."
+        answer: "Your winnings are automatically credited to your BattleStacks wallet after the tournament results are verified. You can go to your \"Wallet\" page, click on \"Redeem Winnings,\" and enter the amount you wish to withdraw. The funds will be transferred to your registered UPI ID/bank account within 24-48 hours."
     },
     {
         question: "I didn’t receive my prize. What should I do?",
-        answer: "Prize distribution is typically completed within a few hours after a tournament ends. If you haven't received your winnings in your BattleBucks wallet after 24 hours, please contact us immediately via the contact form on this page or email us at teambattlebucks@gmail.com with your username and the tournament details."
+        answer: "Prize distribution is typically completed within a few hours after a tournament ends. If you haven't received your winnings in your BattleStacks wallet after 24 hours, please contact us immediately via the contact form on this page or email us at teambattlestacks@gmail.com with your username and the tournament details."
     },
     {
         question: "How do I report a cheating player or team?",
-        answer: "We have a zero-tolerance policy for cheating. If you suspect a player is cheating, please provide video evidence (e.g., a screen recording) and send it to our support email at teambattlebucks@gmail.com along with the match details and the cheater's username. Our team will investigate thoroughly."
+        answer: "We have a zero-tolerance policy for cheating. If you suspect a player is cheating, please provide video evidence (e.g., a screen recording) and send it to our support email at teambattlestacks@gmail.com along with the match details and the cheater's username. Our team will investigate thoroughly."
     },
     {
         question: "Can I cancel my tournament registration and get a refund?",
-        answer: "As per our policy, entry fees are non-refundable once your slot is confirmed. Refunds are only issued if a tournament is canceled by BattleBucks. Please read our full Refund Policy for more details."
+        answer: "As per our policy, entry fees are non-refundable once your slot is confirmed. Refunds are only issued if a tournament is canceled by BattleStacks. Please read our full Refund Policy for more details."
     },
     {
         question: "How are match results submitted and verified?",
@@ -139,7 +139,7 @@ export default function ContactPage() {
                                             </div>
                                             <div>
                                                 <h3 className="font-bold">Email Us</h3>
-                                                <a href="mailto:teambattlebucks@gmail.com" className="text-muted-foreground hover:text-primary break-all">teambattlebucks@gmail.com</a>
+                                                <a href="mailto:teambattlestacks@gmail.com" className="text-muted-foreground hover:text-primary break-all">teambattlestacks@gmail.com</a>
                                             </div>
                                         </CardContent>
                                     </Card>

@@ -4,7 +4,7 @@ import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 
 export const metadata: Metadata = {
-  title: 'BattleBucks',
+  title: 'BattleStacks',
   description: 'Online esports tournament platform for PUBG and Free Fire players.',
 };
 

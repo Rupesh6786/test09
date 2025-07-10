@@ -122,7 +122,7 @@ export default function AdminDashboardPage() {
 
         if (tournament && userName) {
             const subject = `Registration Confirmed: ${tournament.title}`;
-            const body = `Hi ${userName},\n\nCongratulations! Your registration for the "${tournament.title}" tournament is confirmed.\n\nMatch Details:\n- Date: ${tournament.date}\n- Time: ${tournament.time}\n- Entry Fee Paid: ₹${tournament.entryFee}\n\nWe're excited to see you in the arena! The total prize pool is ₹${tournament.prizePool.toLocaleString()}.\n\nIf you have any questions, feel free to contact us at teambattlebucks@gmail.com.\n\nGood luck!\n\nThe BattleBucks Team`;
+            const body = `Hi ${userName},\n\nCongratulations! Your registration for the "${tournament.title}" tournament is confirmed.\n\nMatch Details:\n- Date: ${tournament.date}\n- Time: ${tournament.time}\n- Entry Fee Paid: ₹${tournament.entryFee}\n\nWe're excited to see you in the arena! The total prize pool is ₹${tournament.prizePool.toLocaleString()}.\n\nIf you have any questions, feel free to contact us at teambattlestacks@gmail.com.\n\nGood luck!\n\nThe BattleStacks Team`;
             
             const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${registration.userEmail}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
             window.open(gmailUrl, '_blank');

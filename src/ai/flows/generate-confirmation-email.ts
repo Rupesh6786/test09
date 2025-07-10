@@ -35,7 +35,7 @@ const prompt = ai.definePrompt({
   name: 'generateConfirmationEmailPrompt',
   input: {schema: ConfirmationEmailInputSchema},
   output: {schema: ConfirmationEmailOutputSchema},
-  prompt: `You are an assistant for an esports platform called BattleBucks. 
+  prompt: `You are an assistant for an esports platform called BattleStacks. 
   Your task is to generate a friendly and professional confirmation email for a player whose tournament registration has been approved.
 
   Generate a subject and a body for the email.

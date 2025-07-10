@@ -34,11 +34,11 @@ export default function SettingsPage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="platformName">Platform Name</Label>
-              <Input id="platformName" defaultValue="BattleBucks" />
+              <Input id="platformName" defaultValue="BattleStacks" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="adminEmail">Admin Email</Label>
-              <Input id="adminEmail" type="email" defaultValue="admin@battlebucks.com" />
+              <Input id="adminEmail" type="email" defaultValue="admin@battlestacks.com" />
             </div>
           </CardContent>
         </Card>
@@ -51,7 +51,7 @@ export default function SettingsPage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="upiId">UPI ID</Label>
-              <Input id="upiId" defaultValue="payment@battlebucks" />
+              <Input id="upiId" defaultValue="payment@battlestacks" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="qrCodeUrl">QR Code Image URL</Label>

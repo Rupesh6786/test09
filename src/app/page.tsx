@@ -77,7 +77,7 @@ function HeroSection() {
       <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/50 to-transparent" />
       <div className="relative z-10 flex h-full flex-col items-center justify-end pb-20 text-center sm:pb-28">
         <h1 className="font-headline text-4xl font-bold uppercase tracking-wider text-primary text-shadow-primary sm:text-5xl md:text-6xl lg:text-7xl">
-          BattleBucks
+          BattleStacks
         </h1>
         <p className="mt-4 max-w-2xl text-base text-muted-foreground sm:text-lg md:text-xl">
           Join the ultimate battleground for PUBG & Free Fire. Compete, conquer, and claim your real cash winnings.

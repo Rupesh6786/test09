@@ -21,7 +21,7 @@ export default function RefundPage() {
               </div>
               <div>
                 <h3 className="text-xl font-bold text-accent mb-2">2. Tournament Cancellation</h3>
-                <p>In the unlikely event that a tournament is canceled by BattleBucks, all registered players will receive a full refund of their entry fee credited directly to their in-app BattleBucks Wallet. This credit can be used for future tournaments or withdrawn according to our wallet policy.</p>
+                <p>In the unlikely event that a tournament is canceled by BattleStacks, all registered players will receive a full refund of their entry fee credited directly to their in-app BattleStacks Wallet. This credit can be used for future tournaments or withdrawn according to our wallet policy.</p>
               </div>
               <div>
                 <h3 className="text-xl font-bold text-accent mb-2">3. Disqualification</h3>

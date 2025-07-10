@@ -130,7 +130,7 @@ export default function RevenuePage() {
         
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);
-        link.setAttribute('download', `battlebucks_payments_${new Date().toISOString().split('T')[0]}.csv`);
+        link.setAttribute('download', `battlestacks_payments_${new Date().toISOString().split('T')[0]}.csv`);
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();

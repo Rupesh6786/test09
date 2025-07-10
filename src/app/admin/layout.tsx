@@ -28,7 +28,7 @@ function AdminSidebar({ onLogout }: { onLogout: () => Promise<void> }) {
     return (
         <Sidebar>
             <SidebarHeader>
-                <h2 className="text-xl font-bold text-primary px-4">BattleBucks</h2>
+                <h2 className="text-xl font-bold text-primary px-4">BattleStacks</h2>
             </SidebarHeader>
             <SidebarMenu className="flex-1 overflow-y-auto">
                 <SidebarMenuItem>

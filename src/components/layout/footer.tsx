@@ -8,7 +8,7 @@ export function Footer() {
       <div className="container mx-auto max-w-7xl px-4 py-8">
         <div className="flex flex-col gap-8 text-center md:flex-row md:justify-between md:text-left">
           <div className="md:max-w-xs">
-            <h3 className="font-headline text-lg font-bold text-primary">About BattleBucks</h3>
+            <h3 className="font-headline text-lg font-bold text-primary">About BattleStacks</h3>
             <p className="mt-2 text-muted-foreground text-sm">
               The premier platform for competitive mobile gamers. Win real money, prove your skills, and become a legend.
             </p>
@@ -34,14 +34,14 @@ export function Footer() {
             <h3 className="font-headline text-lg font-bold text-primary">Connect With Us</h3>
             <div className="flex justify-center md:justify-start items-center space-x-4 mt-2">
                 <Link href="https://x.com/ARCubers?s=09" target="_blank" rel="noopener noreferrer"><Twitter className="h-6 w-6 text-muted-foreground hover:text-primary" /></Link>
-                <Link href="https://www.instagram.com/battlebucks.arena/" target="_blank" rel="noopener noreferrer"><Instagram className="h-6 w-6 text-muted-foreground hover:text-primary" /></Link>
+                <Link href="https://www.instagram.com/battlestacks.arena/" target="_blank" rel="noopener noreferrer"><Instagram className="h-6 w-6 text-muted-foreground hover:text-primary" /></Link>
                 <Link href="https://www.facebook.com/share/1FcLATe9kX/" target="_blank" rel="noopener noreferrer"><Facebook className="h-6 w-6 text-muted-foreground hover:text-primary" /></Link>
                 <Link href="#" target="_blank" rel="noopener noreferrer"><Youtube className="h-6 w-6 text-muted-foreground hover:text-primary" /></Link>
             </div>
           </div>
         </div>
         <div className="mt-8 pt-8 border-t border-border/40 text-center text-muted-foreground text-sm">
-          <p>{`© ${new Date().getFullYear()} BattleBucks. All rights reserved.`}</p>
+          <p>{`© ${new Date().getFullYear()} BattleStacks. All rights reserved.`}</p>
         </div>
       </div>
     </footer>

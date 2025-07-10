@@ -165,7 +165,7 @@ export type EmailTemplate = {
 export const testimonials: Testimonial[] = [
   {
     name: 'GamerXpert',
-    quote: 'BattleBucks is legit! The competition is fierce and the payouts are fast. Won my first tourney last week!',
+    quote: 'BattleStacks is legit! The competition is fierce and the payouts are fast. Won my first tourney last week!',
     winHistory: 'Won ₹5,000 in Weekend Warriors Cup',
     avatar: 'https://placehold.co/100x100/333333/7CFC00.png?text=G',
   },

@@ -17,7 +17,7 @@ export default function TermsPage() {
             <CardContent className="space-y-6 text-muted-foreground">
               <div>
                 <h3 className="text-xl font-bold text-accent mb-2">1. Introduction</h3>
-                <p>Welcome to BattleBucks! These Terms of Service ("Terms") govern your use of our website and services. By accessing or using our platform, you agree to be bound by these Terms.</p>
+                <p>Welcome to BattleStacks! These Terms of Service ("Terms") govern your use of our website and services. By accessing or using our platform, you agree to be bound by these Terms.</p>
               </div>
               <div>
                 <h3 className="text-xl font-bold text-accent mb-2">2. User Accounts</h3>
@@ -29,11 +29,11 @@ export default function TermsPage() {
               </div>
               <div>
                 <h3 className="text-xl font-bold text-accent mb-2">4. Payments, Winnings, and Wallet</h3>
-                <p>All entry fees are processed through our designated payment gateways. Tournament winnings are credited to your in-app BattleBucks Wallet. You can request to withdraw your wallet balance, subject to verification by our team. Withdrawals are processed manually and sent to the payment details associated with your account. There are no fees for withdrawals. Please note that BattleBucks is not a bank or financial institution, and the wallet feature is solely for managing winnings from tournaments hosted on our platform. BattleBucks is not responsible for delays or failed transactions due to incorrect payment information provided by you.</p>
+                <p>All entry fees are processed through our designated payment gateways. Tournament winnings are credited to your in-app BattleStacks Wallet. You can request to withdraw your wallet balance, subject to verification by our team. Withdrawals are processed manually and sent to the payment details associated with your account. There are no fees for withdrawals. Please note that BattleStacks is not a bank or financial institution, and the wallet feature is solely for managing winnings from tournaments hosted on our platform. BattleStacks is not responsible for delays or failed transactions due to incorrect payment information provided by you.</p>
               </div>
               <div>
                 <h3 className="text-xl font-bold text-accent mb-2">5. Limitation of Liability</h3>
-                <p>BattleBucks is not liable for any indirect, incidental, special, consequential or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from your access to or use of or inability to access or use the service.</p>
+                <p>BattleStacks is not liable for any indirect, incidental, special, consequential or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from your access to or use of or inability to access or use the service.</p>
               </div>
               <div>
                 <h3 className="text-xl font-bold text-accent mb-2">6. Changes to Terms</h3>

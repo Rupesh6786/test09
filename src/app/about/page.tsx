@@ -22,7 +22,7 @@ export default function AboutPage() {
           <div className="container mx-auto px-4 relative z-10 max-w-7xl">
             <div className="text-center">
               <h1 className="font-headline text-4xl md:text-6xl font-bold uppercase tracking-wider text-primary text-shadow-primary">
-                About BattleBucks
+                About BattleStacks
               </h1>
               <p className="mt-4 max-w-3xl mx-auto text-lg text-muted-foreground">
                 The ultimate battleground for mobile esports enthusiasts. Compete, conquer, and claim your glory.
@@ -37,7 +37,7 @@ export default function AboutPage() {
                     <div>
                         <h2 className="font-headline text-3xl font-bold text-accent mb-4">Our Story</h2>
                         <p className="text-muted-foreground mb-4">
-                            BattleBucks was born from a passion for competitive gaming and a desire to create a fair, accessible, and thrilling platform for players everywhere. We saw the need for a place where mobile gamers could not only test their skills against the best but also get rewarded for their dedication.
+                            BattleStacks was born from a passion for competitive gaming and a desire to create a fair, accessible, and thrilling platform for players everywhere. We saw the need for a place where mobile gamers could not only test their skills against the best but also get rewarded for their dedication.
                         </p>
                         <p className="text-muted-foreground">
                             We are a team of dedicated developers, gamers, and esports fans committed to building the best possible experience for our community.
