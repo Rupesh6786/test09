@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -16,6 +16,7 @@ import { auth, db } from '@/lib/firebase';
 import { createUserWithEmailAndPassword, sendEmailVerification, signOut } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const gameIdSchema = z.string()
     .regex(/^[0-9]+$/, "Game UID must be numeric.")
@@ -37,11 +38,32 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: { name: '', email: '', gameId: '', teamName: '', phoneNumber: '', password: '' },
   });
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      const container = containerRef.current;
+      if (container) {
+        const { left, top, width, height } = container.getBoundingClientRect();
+        const x = e.clientX - left;
+        const y = e.clientY - top;
+        container.style.setProperty('--mouse-x', `${x}px`);
+        container.style.setProperty('--mouse-y', `${y}px`);
+      }
+    };
+    
+    const container = containerRef.current;
+    container?.addEventListener('mousemove', handleMouseMove);
+
+    return () => {
+      container?.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []);
 
   const onSubmit = async (data: RegisterFormValues) => {
     setIsLoading(true);
@@ -49,10 +71,8 @@ export default function RegisterPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       const user = userCredential.user;
 
-      // Send verification email
       await sendEmailVerification(user);
 
-      // Now store the rest of the user's data in Firestore
       await setDoc(doc(db, "users", user.uid), {
         uid: user.uid,
         name: data.name,
@@ -71,7 +91,6 @@ export default function RegisterPage() {
         photoURL: '',
       });
 
-      // Sign the user out until they verify their email
       await signOut(auth);
 
       toast({
@@ -99,8 +118,19 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4 bg-background">
-      <Card className="w-full max-w-md bg-card/80 backdrop-blur-sm border-border/50">
+    <div
+      ref={containerRef}
+      className={cn(
+        "relative flex min-h-screen items-center justify-center p-4 overflow-hidden bg-background",
+        "after:absolute after:inset-0 after:z-0",
+        "after:bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)]",
+        "after:bg-[size:2rem_2rem] after:opacity-100",
+        "after:[mask-image:radial-gradient(500px_circle_at_var(--mouse-x)_var(--mouse-y),black,transparent)]",
+        "before:absolute before:inset-0 before:z-0",
+        "before:bg-[radial-gradient(400px_circle_at_var(--mouse-x)_var(--mouse-y),hsla(var(--primary)/0.20),transparent_80%)]"
+      )}
+    >
+      <Card className="w-full max-w-md bg-card/80 backdrop-blur-sm border-border/50 z-10">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-bold">Create Account</CardTitle>
           <CardDescription>Join the arena and start competing today!</CardDescription>
