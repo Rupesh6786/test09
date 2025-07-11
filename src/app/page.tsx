@@ -17,6 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { UserCheck, ShieldCheck, Zap, Gamepad2, Trophy, Users, Award, UserPlus, LogIn } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { cn } from '@/lib/utils';
 
 export default function Home() {
   return (
@@ -74,7 +75,12 @@ function HeroSection() {
             </div>
         </>
       )}
-      <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/50 to-transparent" />
+      <div className={cn(
+          "absolute inset-0 bg-gradient-to-t to-transparent",
+          theme === 'light' 
+              ? "from-background/80 via-background/30" 
+              : "from-background/90 via-background/50"
+      )} />
       <div className="relative z-10 flex h-full flex-col items-center justify-end pb-20 text-center sm:pb-28">
         <h1 className="font-headline text-4xl font-bold uppercase tracking-wider text-primary text-shadow-primary sm:text-5xl md:text-6xl lg:text-7xl">
           BattleStacks
@@ -274,3 +280,5 @@ function LiveStatsSection() {
     </section>
   );
 }
+
+    
