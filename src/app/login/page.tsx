@@ -170,19 +170,7 @@ export default function LoginPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <div className="flex justify-between items-center">
-                      <FormLabel>Password</FormLabel>
-                       <Button 
-                          type="button" 
-                          variant="link" 
-                          className="p-0 h-auto text-xs" 
-                          onClick={handleForgotPassword}
-                          disabled={isSendingReset || isLoading}
-                        >
-                          {isSendingReset && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
-                          Forgot Password?
-                        </Button>
-                    </div>
+                    <FormLabel>Password</FormLabel>
                     <FormControl><Input type="password" placeholder="********" {...field} disabled={isLoading} /></FormControl>
                     <FormMessage />
                   </FormItem>
@@ -194,6 +182,18 @@ export default function LoginPage() {
               </Button>
             </form>
           </Form>
+          <div className="mt-4 text-center">
+             <Button 
+                type="button" 
+                variant="link" 
+                className="p-0 h-auto text-xs" 
+                onClick={handleForgotPassword}
+                disabled={isSendingReset || isLoading}
+              >
+                {isSendingReset && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+                Forgot Password?
+              </Button>
+          </div>
           <div className="mt-4 text-center text-sm">
             <p className="text-muted-foreground">
               Don't have an account?{' '}
@@ -207,4 +207,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
