@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { auth } from '@/lib/firebase';
-import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from 'firebase/auth';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -28,6 +28,7 @@ const ADMIN_UID = 'ymwd0rW1wnNZkYlUR7cUi9dkd452';
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isSendingReset, setIsSendingReset] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -101,6 +102,32 @@ export default function LoginPage() {
     }
   };
 
+  const handleForgotPassword = async () => {
+    const email = form.getValues('email');
+    if (!email || !z.string().email().safeParse(email).success) {
+      form.setError('email', { type: 'manual', message: 'Please enter a valid email to reset your password.' });
+      return;
+    }
+    
+    setIsSendingReset(true);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      toast({
+        title: 'Password Reset Email Sent',
+        description: `If an account exists for ${email}, a reset link has been sent to it. Please check your inbox.`,
+      });
+    } catch (error) {
+      console.error('Error sending password reset email:', error);
+      toast({
+        title: 'Error',
+        description: 'There was a problem sending the reset email. Please try again later.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSendingReset(false);
+    }
+  };
+
   return (
     <div
       ref={containerRef}
@@ -143,7 +170,19 @@ export default function LoginPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <div className="flex justify-between items-center">
+                      <FormLabel>Password</FormLabel>
+                       <Button 
+                          type="button" 
+                          variant="link" 
+                          className="p-0 h-auto text-xs" 
+                          onClick={handleForgotPassword}
+                          disabled={isSendingReset || isLoading}
+                        >
+                          {isSendingReset && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+                          Forgot Password?
+                        </Button>
+                    </div>
                     <FormControl><Input type="password" placeholder="********" {...field} disabled={isLoading} /></FormControl>
                     <FormMessage />
                   </FormItem>
@@ -168,3 +207,4 @@ export default function LoginPage() {
     </div>
   );
 }
+
