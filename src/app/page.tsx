@@ -44,37 +44,45 @@ function HeroSection() {
     setMounted(true);
   }, []);
 
+  if (!mounted) {
+      // Render a placeholder or null on the server and initial client render
+      return (
+        <section className="relative h-[90vh] min-h-[600px] w-full overflow-hidden bg-background">
+            <div className="relative z-10 flex h-full flex-col items-center justify-end pb-20 text-center sm:pb-28">
+                <Skeleton className="h-16 w-3/4 mb-4" />
+                <Skeleton className="h-6 w-1/2" />
+            </div>
+        </section>
+      );
+  }
+
   const desktopImage = theme === 'light' ? '/img/hero_section_bg-img-max.png' : '/img/player-waking_hero_section.png';
   const mobileImage = theme === 'light' ? '/img/hero_section_bg-img-min.png' : '/img/mobile_responsive_hero_section.png';
   
   return (
     <section className="relative h-[90vh] min-h-[600px] w-full overflow-hidden">
-      {mounted && (
-        <>
-            <div className="absolute inset-0 z-0 hidden md:block">
-                <Image
-                src={desktopImage}
-                alt="Hero background"
-                data-ai-hint="gaming esports"
-                fill
-                className="object-cover"
-                priority
-                key={desktopImage}
-                />
-            </div>
-            <div className="absolute inset-0 z-0 md:hidden">
-                <Image
-                src={mobileImage}
-                alt="Hero background mobile"
-                data-ai-hint="mobile gamer"
-                fill
-                className="object-cover"
-                priority
-                key={mobileImage}
-                />
-            </div>
-        </>
-      )}
+      <div className="absolute inset-0 z-0 hidden md:block">
+          <Image
+          src={desktopImage}
+          alt="Hero background"
+          data-ai-hint="gaming esports"
+          fill
+          className="object-cover"
+          priority
+          key={desktopImage}
+          />
+      </div>
+      <div className="absolute inset-0 z-0 md:hidden">
+          <Image
+          src={mobileImage}
+          alt="Hero background mobile"
+          data-ai-hint="mobile gamer"
+          fill
+          className="object-cover"
+          priority
+          key={mobileImage}
+          />
+      </div>
       <div className={cn(
           "absolute inset-0 bg-gradient-to-t from-background to-transparent",
           theme === 'light' && "opacity-80"
