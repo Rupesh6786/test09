@@ -79,20 +79,24 @@ export function Header() {
     let isInitialAuthCheck = true;
 
     const authUnsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user && !authUser) { // User just logged in
+      // Check if user state changed from logged out to logged in
+      if (user && !authUser) { 
         if (!isInitialAuthCheck) {
           setShowWelcome(true);
-          setTimeout(() => setShowWelcome(false), 4500); // Ensure this component unmounts
+          // Automatically hide the welcome message after a delay
+          setTimeout(() => setShowWelcome(false), 4500); 
         }
       }
 
       setAuthUser(user);
       isInitialAuthCheck = false;
 
+      // Clean up previous Firestore listener
       if (firestoreUnsubscribe) {
         firestoreUnsubscribe();
       }
 
+      // If user is logged in, listen for profile changes
       if (user) {
         const userDocRef = doc(db, 'users', user.uid);
         firestoreUnsubscribe = onSnapshot(userDocRef, (docSnap) => {
@@ -103,6 +107,7 @@ export function Header() {
           }
         });
       } else {
+        // If user is logged out, clear profile
         setUserProfile(null);
       }
     });
@@ -113,6 +118,7 @@ export function Header() {
         firestoreUnsubscribe();
       }
     };
+  // We include `authUser` in the dependency array to properly track the login state change.
   }, [authUser]);
 
   useEffect(() => {
