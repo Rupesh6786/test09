@@ -57,7 +57,7 @@ export default function ManageMatchesPage() {
   const fetchTournaments = async () => {
     setIsLoading(true);
     try {
-        const q = query(collection(db, "tournaments"), orderBy("date", "desc"), orderBy("seriesNumber", "desc"));
+        const q = query(collection(db, "tournaments"), orderBy("date", "desc"));
         const querySnapshot = await getDocs(q);
         const fetchedTournaments = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Tournament[];
         setTournaments(fetchedTournaments);
