@@ -26,7 +26,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { useToast } from '@/hooks/use-toast';
-import { Search, PlusCircle, Edit, Trash2, Award, Loader2, Shuffle } from 'lucide-react';
+import { Search, PlusCircle, Edit, Trash2, Award, Loader2, Shuffle, Eye } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, doc, addDoc, updateDoc, deleteDoc, query, orderBy, runTransaction, where, limit, increment, arrayRemove, getDoc } from 'firebase/firestore';
 import type { Tournament, BracketTeam, BracketRound, BracketMatchup } from '@/lib/data';
@@ -48,13 +48,16 @@ export default function ManageMatchesPage() {
   const [editingTournament, setEditingTournament] = useState<Tournament | null>(null);
   const [isBracketManagerOpen, setIsBracketManagerOpen] = useState(false);
   const [selectedTournamentForBracket, setSelectedTournamentForBracket] = useState<Tournament | null>(null);
+  const [isSeriesViewOpen, setIsSeriesViewOpen] = useState(false);
+  const [seriesTournaments, setSeriesTournaments] = useState<Tournament[]>([]);
+  const [selectedSeriesId, setSelectedSeriesId] = useState<string | null>(null);
 
   const { toast } = useToast();
 
   const fetchTournaments = async () => {
     setIsLoading(true);
     try {
-        const q = query(collection(db, "tournaments"), orderBy("date", "desc"));
+        const q = query(collection(db, "tournaments"), orderBy("date", "desc"), orderBy("seriesNumber", "desc"));
         const querySnapshot = await getDocs(q);
         const fetchedTournaments = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Tournament[];
         setTournaments(fetchedTournaments);
@@ -89,8 +92,20 @@ export default function ManageMatchesPage() {
         t.game.toLowerCase().includes(searchTerm.toLowerCase())
       )
       .filter(t => gameFilter === 'all' || t.game === gameFilter)
-      .filter(t => statusFilter === 'all' || t.status === statusFilter);
+      .filter(t => statusFilter === 'all' || t.status === statusFilter)
+      // Hide child tournaments from the main view
+      .filter(t => t.seriesId ? tournaments.find(parent => parent.id === t.seriesId) === undefined || t.id === t.seriesId : true);
   }, [tournaments, searchTerm, gameFilter, statusFilter]);
+  
+  const handleViewSeries = (seriesId: string) => {
+    const relatedTournaments = tournaments
+        .filter(t => (t.seriesId || t.id) === seriesId)
+        .sort((a, b) => (a.seriesNumber || 1) - (b.seriesNumber || 1));
+    setSeriesTournaments(relatedTournaments);
+    setSelectedSeriesId(seriesId);
+    setIsSeriesViewOpen(true);
+  };
+
 
   const handleAddNew = () => {
     setEditingTournament(null);
@@ -103,7 +118,7 @@ export default function ManageMatchesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this match?")) return;
+    if (!window.confirm("Are you sure you want to delete this match? This cannot be undone.")) return;
     try {
         await deleteDoc(doc(db, "tournaments", id));
         toast({ title: "Match Deleted", description: "The match has been removed." });
@@ -148,7 +163,7 @@ export default function ManageMatchesPage() {
             await updateDoc(docRef, tournamentData);
             toast({ title: "Success", description: "Match details updated." });
         } else {
-            await addDoc(collection(db, "tournaments"), { ...tournamentData, slotsAllotted: 0 });
+            await addDoc(collection(db, "tournaments"), { ...tournamentData, slotsAllotted: 0, seriesNumber: 1 });
             toast({ title: "Success", description: "New match created." });
         }
         fetchTournaments(); // Refresh list
@@ -358,13 +373,22 @@ export default function ManageMatchesPage() {
                 ) : filteredTournaments.length > 0 ? (
                   filteredTournaments.map(tournament => (
                     <TableRow key={tournament.id}>
-                      <TableCell className="font-medium">{tournament.title}</TableCell>
+                      <TableCell className="font-medium">
+                        {tournament.title}
+                        {tournament.seriesNumber && tournament.seriesNumber > 1 && <span className="text-muted-foreground text-xs"> (Match {tournament.seriesNumber})</span>}
+                        {tournaments.some(t => t.seriesId === (tournament.seriesId || tournament.id) && t.id !== tournament.id) && (
+                            <Badge variant="secondary" className="ml-2">Series</Badge>
+                        )}
+                        </TableCell>
                       <TableCell className="hidden md:table-cell">{tournament.game}</TableCell>
                       <TableCell className="hidden sm:table-cell">{tournament.slotsAllotted || 0}/{tournament.slotsTotal}</TableCell>
                       <TableCell>₹{tournament.entryFee.toLocaleString()}</TableCell>
                       <TableCell>₹{tournament.prizePool.toLocaleString()}</TableCell>
                       <TableCell className="text-center"><Badge variant={getStatusBadgeVariant(tournament.status)}>{tournament.status}</Badge></TableCell>
                       <TableCell className="text-right">
+                        {tournaments.some(t => t.seriesId === (tournament.seriesId || tournament.id) && t.id !== tournament.id) && (
+                            <Button variant="ghost" size="icon" onClick={() => handleViewSeries(tournament.seriesId || tournament.id)}><Eye className="w-4 h-4"/></Button>
+                        )}
                         <Button variant="ghost" size="icon" onClick={() => handleEdit(tournament)} disabled={tournament.status === 'Completed'}><Edit className="w-4 h-4" /></Button>
                         <Button variant="ghost" size="icon" onClick={() => handleManageBracket(tournament)} disabled={tournament.status !== 'Ongoing' || !tournament.confirmedTeams || tournament.confirmedTeams.length === 0}><Award className="w-4 h-4" /></Button>
                         <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(tournament.id)}><Trash2 className="w-4 h-4" /></Button>
@@ -393,6 +417,9 @@ export default function ManageMatchesPage() {
                             <div>
                                 <p className="font-bold">{tournament.title}</p>
                                 <p className="text-sm text-muted-foreground">{tournament.game}</p>
+                                {tournaments.some(t => t.seriesId === (tournament.seriesId || tournament.id) && t.id !== tournament.id) && (
+                                    <Badge variant="secondary" className="mt-1">Series</Badge>
+                                )}
                             </div>
                             <Badge variant={getStatusBadgeVariant(tournament.status)} className="shrink-0">{tournament.status}</Badge>
                         </div>
@@ -411,6 +438,9 @@ export default function ManageMatchesPage() {
                             </div>
                         </div>
                         <div className="flex justify-end gap-1 mt-4 pt-4 border-t border-muted-foreground/20">
+                            {tournaments.some(t => t.seriesId === (tournament.seriesId || tournament.id) && t.id !== tournament.id) && (
+                                <Button variant="ghost" size="sm" onClick={() => handleViewSeries(tournament.seriesId || tournament.id)}><Eye className="w-4 h-4 mr-2"/>View Series</Button>
+                            )}
                             <Button variant="ghost" size="sm" onClick={() => handleEdit(tournament)} disabled={tournament.status === 'Completed'}><Edit className="w-4 h-4 mr-2" />Edit</Button>
                             <Button variant="ghost" size="sm" onClick={() => handleManageBracket(tournament)} disabled={tournament.status !== 'Ongoing' || !tournament.confirmedTeams || tournament.confirmedTeams.length === 0}><Award className="w-4 h-4 mr-2" />Manage</Button>
                             <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleDelete(tournament.id)}><Trash2 className="w-4 h-4 mr-2" />Delete</Button>
@@ -440,6 +470,15 @@ export default function ManageMatchesPage() {
         onFinalWinner={handleFinalWinner}
         onBracketReset={handleResetBracket}
         onTeamRemove={handleRemoveTeam}
+      />
+      <SeriesViewDialog
+        isOpen={isSeriesViewOpen}
+        setIsOpen={setIsSeriesViewOpen}
+        tournaments={seriesTournaments}
+        onManageBracket={handleManageBracket}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        getStatusBadgeVariant={getStatusBadgeVariant}
       />
     </div>
   );
@@ -552,6 +591,70 @@ function MatchFormDialog({ isOpen, setIsOpen, onSave, tournament }: { isOpen: bo
         </Dialog>
     );
 }
+
+// Sub-component for viewing tournament series
+function SeriesViewDialog({
+  isOpen,
+  setIsOpen,
+  tournaments,
+  onManageBracket,
+  onEdit,
+  onDelete,
+  getStatusBadgeVariant,
+}: {
+  isOpen: boolean;
+  setIsOpen: (open: boolean) => void;
+  tournaments: Tournament[];
+  onManageBracket: (tournament: Tournament) => void;
+  onEdit: (tournament: Tournament) => void;
+  onDelete: (id: string) => void;
+  getStatusBadgeVariant: (status: string) => "success" | "warning" | "secondary" | "default";
+}) {
+  const seriesTitle = tournaments.length > 0 ? tournaments[0].title : "Tournament Series";
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Viewing Series: "{seriesTitle}"</DialogTitle>
+          <DialogDescription>
+            All matches associated with this series are listed below.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="max-h-[60vh] overflow-y-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Match</TableHead>
+                <TableHead>Slots</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {tournaments.map((t) => (
+                <TableRow key={t.id}>
+                  <TableCell>Match {t.seriesNumber}</TableCell>
+                  <TableCell>{t.slotsAllotted || 0}/{t.slotsTotal}</TableCell>
+                  <TableCell><Badge variant={getStatusBadgeVariant(t.status)}>{t.status}</Badge></TableCell>
+                  <TableCell className="text-right">
+                     <Button variant="ghost" size="icon" onClick={() => { onEdit(t); setIsOpen(false); }} disabled={t.status === 'Completed'}><Edit className="w-4 h-4" /></Button>
+                     <Button variant="ghost" size="icon" onClick={() => { onManageBracket(t); setIsOpen(false); }} disabled={t.status !== 'Ongoing'}><Award className="w-4 h-4" /></Button>
+                     <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => { onDelete(t.id); setIsOpen(false); }}><Trash2 className="w-4 h-4" /></Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+        <DialogFooter>
+          <DialogClose asChild><Button variant="outline">Close</Button></DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 
 const getRoundTitle = (matchupCount: number, totalSlots: number) => {
     if (matchupCount === 1) return 'Finals';

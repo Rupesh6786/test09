@@ -34,6 +34,8 @@ export type Tournament = {
   confirmedTeams?: BracketTeam[];
   winner?: { userId: string; teamName: string; prizeMoney: number };
   bracket?: BracketRound[];
+  seriesId?: string; // To group related tournaments
+  seriesNumber?: number; // To order tournaments in a series
 };
 
 export type Testimonial = {

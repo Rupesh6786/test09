@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, updateDoc, query, orderBy, runTransaction, increment, getDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { collection, getDocs, doc, query, orderBy, runTransaction, increment, getDoc, arrayUnion, arrayRemove, addDoc } from 'firebase/firestore';
 import { Loader2, CheckCircle, Search, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -79,16 +79,40 @@ export default function AdminRegistrationsPage() {
                     throw "Tournament not found!";
                 }
                 
-                const tournamentData = tournamentDoc.data();
-                if (tournamentData.slotsAllotted >= tournamentData.slotsTotal) {
+                const tournamentData = tournamentDoc.data() as Tournament;
+                const newSlotsAllotted = (tournamentData.slotsAllotted || 0) + 1;
+
+                if (newSlotsAllotted > tournamentData.slotsTotal) {
                     throw "No slots left in this tournament.";
                 }
 
+                // Update the current registration and tournament
                 transaction.update(registrationRef, { paymentStatus: 'Confirmed' });
                 transaction.update(tournamentRef, { 
-                    slotsAllotted: increment(1),
+                    slotsAllotted: newSlotsAllotted,
                     confirmedTeams: arrayUnion({ teamName: registration.teamName || '', gameIds: registration.gameIds || [] })
                 });
+
+                // Check if the tournament is now full
+                if (newSlotsAllotted === tournamentData.slotsTotal) {
+                    // Mark the current tournament as 'Ongoing' as it's now full and ready
+                    transaction.update(tournamentRef, { status: 'Ongoing' });
+                    
+                    // Create a new tournament as a clone
+                    const newTournamentData: Omit<Tournament, 'id'> = {
+                        ...tournamentData,
+                        slotsAllotted: 0,
+                        confirmedTeams: [],
+                        bracket: [],
+                        winner: undefined,
+                        status: 'Upcoming', // The new one is upcoming
+                        seriesId: tournamentData.seriesId || tournamentRef.id, // Use existing series or create new one
+                        seriesNumber: (tournamentData.seriesNumber || 1) + 1, // Increment series number
+                    };
+
+                    const newTournamentRef = doc(collection(db, 'tournaments'));
+                    transaction.set(newTournamentRef, newTournamentData);
+                }
             });
 
             // Draft confirmation email
