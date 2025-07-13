@@ -22,7 +22,7 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
   const slotsAllotted = tournament.slotsAllotted || 0;
   const slotsPercentage = (slotsAllotted / tournament.slotsTotal) * 100;
   const slotsLeft = tournament.slotsTotal - slotsAllotted;
-  const isFull = slotsLeft <= 0;
+  const isFull = slotsAllotted >= tournament.slotsTotal;
   
   const now = new Date();
   let registrationHasEnded = false;
