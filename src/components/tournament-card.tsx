@@ -11,6 +11,9 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
 import Image from 'next/image';
+import { useState, useEffect } from 'react';
+import { auth } from '@/lib/firebase';
+import type { User as FirebaseUser } from 'firebase/auth';
 
 type TournamentCardProps = {
   tournament: Tournament;
@@ -18,12 +21,22 @@ type TournamentCardProps = {
 
 export function TournamentCard({ tournament }: TournamentCardProps) {
   const { toast } = useToast();
+  const [authUser, setAuthUser] = useState<FirebaseUser | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   
   const slotsAllotted = tournament.slotsAllotted || 0;
   const slotsPercentage = (slotsAllotted / tournament.slotsTotal) * 100;
   const slotsLeft = tournament.slotsTotal - slotsAllotted;
   const isFull = slotsAllotted >= tournament.slotsTotal;
   
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(user => {
+      setAuthUser(user);
+      setIsAuthLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
   const now = new Date();
   let registrationHasEnded = false;
   let tournamentWillStart = false;
@@ -142,9 +155,11 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
       );
     }
     
+    const registrationLink = authUser ? `/tournaments/${tournament.id}/register` : '/login';
+
     return (
       <Button asChild className="w-full bg-primary/90 text-primary-foreground hover:bg-primary font-bold transition-all hover:shadow-lg hover:box-shadow-primary">
-        <Link href={`/tournaments/${tournament.id}/register`}>Register Now</Link>
+        <Link href={registrationLink}>Register Now</Link>
       </Button>
     );
   };
