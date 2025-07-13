@@ -27,6 +27,7 @@ export type Tournament = {
   startDate?: string;
   entryFee: number;
   prizePool: number;
+  prizeDistribution?: string; // e.g., "50:30:20"
   slotsTotal: number;
   slotsAllotted: number;
   status: 'Upcoming' | 'Ongoing' | 'Completed';

@@ -418,7 +418,7 @@ export default function ManageMatchesPage() {
         onBracketUpdate={handleBracketUpdate}
         onFinalWinner={handleFinalWinner}
         onBracketReset={handleResetBracket}
-        onTeamRemove={handleRemoveTeam}
+        onTeamRemove={handleTeamRemove}
       />
     </div>
   );
@@ -431,7 +431,7 @@ function MatchFormDialog({ isOpen, setIsOpen, onSave, tournament }: { isOpen: bo
     
     useEffect(() => {
         if (isOpen) {
-            setFormData(tournament || { status: 'Upcoming', rules: [], teamType: 'Solo' });
+            setFormData(tournament || { status: 'Upcoming', rules: [], teamType: 'Solo', prizeDistribution: '60:30:10' });
         }
     }, [isOpen, tournament]);
 
@@ -503,6 +503,10 @@ function MatchFormDialog({ isOpen, setIsOpen, onSave, tournament }: { isOpen: bo
               <div className="grid grid-cols-1 gap-y-2 items-center md:grid-cols-4 md:gap-x-4">
                 <Label htmlFor="prizePool" className="md:text-right">Prize Pool</Label>
                 <Input id="prizePool" type="number" value={formData.prizePool || 0} onChange={handleChange} className="md:col-span-3" disabled={isSaving} />
+              </div>
+              <div className="grid grid-cols-1 gap-y-2 items-center md:grid-cols-4 md:gap-x-4">
+                <Label htmlFor="prizeDistribution" className="md:text-right">Prize Distribution Ratio</Label>
+                <Input id="prizeDistribution" placeholder="e.g. 60:30:10" value={formData.prizeDistribution || ''} onChange={handleChange} className="md:col-span-3" disabled={isSaving} />
               </div>
               <div className="grid grid-cols-1 gap-y-2 items-center md:grid-cols-4 md:gap-x-4">
                 <Label htmlFor="slotsTotal" className="md:text-right">Total Slots</Label>
