@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useState, useEffect, useMemo } from 'react';
 import type { Tournament } from '@/lib/data';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, query, orderBy, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, doc, writeBatch } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -21,10 +21,44 @@ export default function TournamentsPage() {
     setIsLoading(true);
     const q = query(collection(db, 'tournaments'), orderBy('date', 'desc'));
     
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    const unsubscribe = onSnapshot(q, async (querySnapshot) => {
         const fetchedTournaments = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Tournament[];
-        setTournaments(fetchedTournaments);
-        setIsLoading(false);
+        
+        // --- Automatic Status Update Logic ---
+        const now = new Date();
+        const batch = writeBatch(db);
+        let updatesMade = false;
+        
+        fetchedTournaments.forEach(t => {
+            if (t.status === 'Upcoming' || t.status === 'Ongoing') {
+                const isFull = t.slotsAllotted >= t.slotsTotal;
+                let registrationHasEnded = false;
+                try {
+                    const registrationDeadline = new Date(`${t.date}T${t.time}`);
+                    if (now > registrationDeadline) {
+                        registrationHasEnded = true;
+                    }
+                } catch (e) {
+                    console.error("Could not parse tournament deadline:", e);
+                }
+                
+                if (isFull && registrationHasEnded) {
+                    const tournamentRef = doc(db, 'tournaments', t.id);
+                    batch.update(tournamentRef, { status: 'Completed' });
+                    updatesMade = true;
+                }
+            }
+        });
+
+        if (updatesMade) {
+            await batch.commit();
+        } else {
+             setTournaments(fetchedTournaments);
+             setIsLoading(false);
+        }
+        // If updates were made, the onSnapshot listener will fire again with the updated data,
+        // so we don't need to call setTournaments here to avoid a flicker.
+
     }, (error) => {
         console.error("Error fetching tournaments: ", error);
         setIsLoading(false);
