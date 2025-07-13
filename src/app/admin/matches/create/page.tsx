@@ -180,7 +180,9 @@ export default function ManageMatchesPage() {
             transaction.update(winnerRef, {
                 walletBalance: increment(tournament.prizePool),
                 totalEarnings: increment(tournament.prizePool),
-                matchesWon: increment(1)
+                matchesWon: increment(1),
+                totalMatches: increment(1),
+                streak: increment(1)
             });
 
             transaction.update(tournamentRef, {
