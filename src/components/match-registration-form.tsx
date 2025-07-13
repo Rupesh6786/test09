@@ -20,6 +20,7 @@ import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/fires
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { LoginDialog } from './login-dialog';
 
 // Helper to create the schema dynamically based on team type
 const createRegistrationSchema = (teamType: 'Solo' | 'Duo' | 'Squad') => {
@@ -49,6 +50,7 @@ const createRegistrationSchema = (teamType: 'Solo' | 'Duo' | 'Squad') => {
 export function MatchRegistrationForm({ tournamentTitle, tournamentId, teamType }: { tournamentTitle: string; tournamentId: string; teamType: 'Solo' | 'Duo' | 'Squad' }) {
     const { toast } = useToast()
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isLoginDialogOpen, setIsLoginDialogOpen] = useState(false);
     const router = useRouter();
 
     const registrationSchema = createRegistrationSchema(teamType);
@@ -77,11 +79,7 @@ export function MatchRegistrationForm({ tournamentTitle, tournamentId, teamType 
         const user = auth.currentUser;
 
         if (!user) {
-            toast({
-                title: "Not Logged In",
-                description: "You must be logged in to register for a match.",
-                variant: "destructive",
-            });
+            setIsLoginDialogOpen(true);
             return;
         }
 
@@ -149,100 +147,103 @@ ${userName}`;
     };
 
     return (
-        <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                control={form.control}
-                name="teamName"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Team Name</FormLabel>
-                    <FormControl>
-                        <Input placeholder="Your team's name" {...field} disabled={isSubmitting} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-                <FormField
-                control={form.control}
-                name="player1GameId"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Player 1 Game UID (Yours)</FormLabel>
-                    <FormControl>
-                        <Input placeholder="Your in-game UID" {...field} disabled={isSubmitting} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-                
-                {(teamType === 'Duo' || teamType === 'Squad') && (
+        <>
+            <LoginDialog open={isLoginDialogOpen} onOpenChange={setIsLoginDialogOpen} />
+            <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                     <FormField
-                        control={form.control}
-                        name="player2GameId"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Player 2 Game UID</FormLabel>
-                            <FormControl>
-                                <Input placeholder="Player 2 in-game UID" {...field} disabled={isSubmitting} />
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
-                        )}
+                    control={form.control}
+                    name="teamName"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Team Name</FormLabel>
+                        <FormControl>
+                            <Input placeholder="Your team's name" {...field} disabled={isSubmitting} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
                     />
-                )}
-                
-                {teamType === 'Squad' && (
-                    <>
+                    <FormField
+                    control={form.control}
+                    name="player1GameId"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Player 1 Game UID (Yours)</FormLabel>
+                        <FormControl>
+                            <Input placeholder="Your in-game UID" {...field} disabled={isSubmitting} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    
+                    {(teamType === 'Duo' || teamType === 'Squad') && (
                         <FormField
                             control={form.control}
-                            name="player3GameId"
+                            name="player2GameId"
                             render={({ field }) => (
                                 <FormItem>
-                                <FormLabel>Player 3 Game UID</FormLabel>
+                                <FormLabel>Player 2 Game UID</FormLabel>
                                 <FormControl>
-                                    <Input placeholder="Player 3 in-game UID" {...field} disabled={isSubmitting} />
+                                    <Input placeholder="Player 2 in-game UID" {...field} disabled={isSubmitting} />
                                 </FormControl>
                                 <FormMessage />
                                 </FormItem>
                             )}
                         />
-                        <FormField
-                            control={form.control}
-                            name="player4GameId"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>Player 4 Game UID</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="Player 4 in-game UID" {...field} disabled={isSubmitting} />
-                                </FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </>
-                )}
-                
-                <FormField
-                control={form.control}
-                name="upiId"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>UPI ID for Payment</FormLabel>
-                    <FormControl>
-                        <Input placeholder="yourname@upi" {...field} disabled={isSubmitting} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-                <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-bold" disabled={isSubmitting}>
-                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Register & Confirm on WhatsApp
-                </Button>
-            </form>
-        </Form>
+                    )}
+                    
+                    {teamType === 'Squad' && (
+                        <>
+                            <FormField
+                                control={form.control}
+                                name="player3GameId"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Player 3 Game UID</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="Player 3 in-game UID" {...field} disabled={isSubmitting} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="player4GameId"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Player 4 Game UID</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="Player 4 in-game UID" {...field} disabled={isSubmitting} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </>
+                    )}
+                    
+                    <FormField
+                    control={form.control}
+                    name="upiId"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>UPI ID for Payment</FormLabel>
+                        <FormControl>
+                            <Input placeholder="yourname@upi" {...field} disabled={isSubmitting} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-bold" disabled={isSubmitting}>
+                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Register & Confirm on WhatsApp
+                    </Button>
+                </form>
+            </Form>
+        </>
     );
 }
