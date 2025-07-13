@@ -37,7 +37,7 @@ export default function TournamentsPage() {
   const ongoing = useMemo(() => tournaments.filter(t => t.status === 'Ongoing'), [tournaments]);
 
   const renderSkeletons = (count: number) => (
-    <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 justify-center">
       {Array.from({ length: count }).map((_, i) => (
         <Card key={i} className="w-full">
             <CardContent className="p-4">
@@ -68,7 +68,7 @@ export default function TournamentsPage() {
               <TabsContent value="upcoming">
                 {isLoading ? renderSkeletons(4) : (
                   upcoming.length > 0 ? (
-                    <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 justify-center">
                       {upcoming.map((tournament) => (
                         <TournamentCard key={tournament.id} tournament={tournament} />
                       ))}
@@ -81,7 +81,7 @@ export default function TournamentsPage() {
               <TabsContent value="ongoing">
                  {isLoading ? renderSkeletons(2) : (
                   ongoing.length > 0 ? (
-                    <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 justify-center">
                       {ongoing.map((tournament) => (
                         <TournamentCard key={tournament.id} tournament={tournament} />
                       ))}
