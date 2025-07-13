@@ -235,7 +235,7 @@ export default function ManageMatchesPage() {
         }
     };
     
-    const handleRemoveTeam = async (tournamentId: string, teamToRemove: BracketTeam) => {
+    const handleTeamRemove = async (tournamentId: string, teamToRemove: BracketTeam) => {
         if (!window.confirm(`Are you sure you want to remove ${teamToRemove.teamName} from the tournament? This action will remove their registration entry and reset the bracket.`)) return;
     
         const tournamentRef = doc(db, "tournaments", tournamentId);
