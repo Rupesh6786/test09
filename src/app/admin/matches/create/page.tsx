@@ -389,7 +389,7 @@ export default function ManageMatchesPage() {
                         {tournaments.some(t => t.seriesId === (tournament.seriesId || tournament.id) && t.id !== tournament.id) && (
                             <Button variant="ghost" size="icon" onClick={() => handleViewSeries(tournament.seriesId || tournament.id)}><Eye className="w-4 h-4"/></Button>
                         )}
-                        <Button variant="ghost" size="icon" onClick={() => handleEdit(tournament)} disabled={tournament.status === 'Completed'}><Edit className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleEdit(tournament)}><Edit className="w-4 h-4" /></Button>
                         <Button variant="ghost" size="icon" onClick={() => handleManageBracket(tournament)} disabled={tournament.status !== 'Ongoing' || !tournament.confirmedTeams || tournament.confirmedTeams.length === 0}><Award className="w-4 h-4" /></Button>
                         <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(tournament.id)}><Trash2 className="w-4 h-4" /></Button>
                       </TableCell>
@@ -441,7 +441,7 @@ export default function ManageMatchesPage() {
                             {tournaments.some(t => t.seriesId === (tournament.seriesId || tournament.id) && t.id !== tournament.id) && (
                                 <Button variant="ghost" size="sm" onClick={() => handleViewSeries(tournament.seriesId || tournament.id)}><Eye className="w-4 h-4 mr-2"/>View Series</Button>
                             )}
-                            <Button variant="ghost" size="sm" onClick={() => handleEdit(tournament)} disabled={tournament.status === 'Completed'}><Edit className="w-4 h-4 mr-2" />Edit</Button>
+                            <Button variant="ghost" size="sm" onClick={() => handleEdit(tournament)}><Edit className="w-4 h-4 mr-2" />Edit</Button>
                             <Button variant="ghost" size="sm" onClick={() => handleManageBracket(tournament)} disabled={tournament.status !== 'Ongoing' || !tournament.confirmedTeams || tournament.confirmedTeams.length === 0}><Award className="w-4 h-4 mr-2" />Manage</Button>
                             <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleDelete(tournament.id)}><Trash2 className="w-4 h-4 mr-2" />Delete</Button>
                         </div>
@@ -638,7 +638,7 @@ function SeriesViewDialog({
                   <TableCell>{t.slotsAllotted || 0}/{t.slotsTotal}</TableCell>
                   <TableCell><Badge variant={getStatusBadgeVariant(t.status)}>{t.status}</Badge></TableCell>
                   <TableCell className="text-right">
-                     <Button variant="ghost" size="icon" onClick={() => { onEdit(t); setIsOpen(false); }} disabled={t.status === 'Completed'}><Edit className="w-4 h-4" /></Button>
+                     <Button variant="ghost" size="icon" onClick={() => { onEdit(t); setIsOpen(false); }}><Edit className="w-4 h-4" /></Button>
                      <Button variant="ghost" size="icon" onClick={() => { onManageBracket(t); setIsOpen(false); }} disabled={t.status !== 'Ongoing'}><Award className="w-4 h-4" /></Button>
                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => { onDelete(t.id); setIsOpen(false); }}><Trash2 className="w-4 h-4" /></Button>
                   </TableCell>
