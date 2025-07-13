@@ -23,42 +23,8 @@ export default function TournamentsPage() {
     
     const unsubscribe = onSnapshot(q, async (querySnapshot) => {
         const fetchedTournaments = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Tournament[];
-        
-        // --- Automatic Status Update Logic ---
-        const now = new Date();
-        const batch = writeBatch(db);
-        let updatesMade = false;
-        
-        fetchedTournaments.forEach(t => {
-            if (t.status === 'Upcoming' || t.status === 'Ongoing') {
-                const isFull = t.slotsAllotted >= t.slotsTotal;
-                let registrationHasEnded = false;
-                try {
-                    const registrationDeadline = new Date(`${t.date}T${t.time}`);
-                    if (now > registrationDeadline) {
-                        registrationHasEnded = true;
-                    }
-                } catch (e) {
-                    console.error("Could not parse tournament deadline:", e);
-                }
-                
-                if (isFull && registrationHasEnded) {
-                    const tournamentRef = doc(db, 'tournaments', t.id);
-                    batch.update(tournamentRef, { status: 'Completed' });
-                    updatesMade = true;
-                }
-            }
-        });
-
-        if (updatesMade) {
-            await batch.commit();
-        } else {
-             setTournaments(fetchedTournaments);
-             setIsLoading(false);
-        }
-        // If updates were made, the onSnapshot listener will fire again with the updated data,
-        // so we don't need to call setTournaments here to avoid a flicker.
-
+        setTournaments(fetchedTournaments);
+        setIsLoading(false);
     }, (error) => {
         console.error("Error fetching tournaments: ", error);
         setIsLoading(false);
