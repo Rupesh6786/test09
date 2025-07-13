@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
@@ -7,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, query, orderBy, runTransaction, increment, getDoc, arrayUnion, arrayRemove, addDoc, collectionGroup } from 'firebase/firestore';
+import { collection, getDocs, doc, query, orderBy, runTransaction, increment, getDoc, arrayUnion, arrayRemove, addDoc, collectionGroup, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { Loader2, CheckCircle, Search, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -80,11 +81,14 @@ export default function AdminRegistrationsPage() {
                 }
                 
                 const tournamentData = tournamentDoc.data() as Tournament;
-                const newSlotsAllotted = (tournamentData.slotsAllotted || 0) + 1;
+                const currentSlotsAllotted = tournamentData.slotsAllotted || 0;
 
-                if (newSlotsAllotted > tournamentData.slotsTotal) {
+                // Ensure we don't overfill
+                if (currentSlotsAllotted >= tournamentData.slotsTotal) {
                     throw "No slots left in this tournament.";
                 }
+
+                const newSlotsAllotted = currentSlotsAllotted + 1;
 
                 // Update the current registration and tournament
                 transaction.update(registrationRef, { paymentStatus: 'Confirmed' });
@@ -93,29 +97,28 @@ export default function AdminRegistrationsPage() {
                     confirmedTeams: arrayUnion({ teamName: registration.teamName || '', gameIds: registration.gameIds || [] })
                 });
 
-                // Check if the tournament is now full
-                if (newSlotsAllotted === tournamentData.slotsTotal) {
+                // Check if the tournament is now full and it's an 'Upcoming' one
+                if (newSlotsAllotted === tournamentData.slotsTotal && tournamentData.status === 'Upcoming') {
                     // Mark the current tournament as 'Ongoing' as it's now full and ready
                     transaction.update(tournamentRef, { status: 'Ongoing' });
                     
                     // Create a new tournament as a clone
+                    // Omit fields that should be reset or are unique to the document
+                    const { id, slotsAllotted, confirmedTeams, bracket, winner, ...restOfData } = tournamentData;
+
                     const newTournamentData: Omit<Tournament, 'id'> = {
-                        ...tournamentData,
+                        ...restOfData,
                         slotsAllotted: 0,
                         confirmedTeams: [],
                         bracket: [],
                         winner: undefined,
                         status: 'Upcoming', // The new one is upcoming
-                        seriesId: tournamentData.seriesId || tournamentDoc.id, // Use existing series or create new one
+                        seriesId: tournamentData.seriesId || tournamentDoc.id, // Use existing series or create new one from original tournament
                         seriesNumber: (tournamentData.seriesNumber || 1) + 1, // Increment series number
                     };
-                    
-                    // Remove id property before saving - it's not part of the Tournament type for creation
-                    const { id, ...restOfNewData } = newTournamentData;
-
 
                     const newTournamentRef = doc(collection(db, 'tournaments'));
-                    transaction.set(newTournamentRef, restOfNewData);
+                    transaction.set(newTournamentRef, newTournamentData);
                 }
             });
 
@@ -135,7 +138,7 @@ export default function AdminRegistrationsPage() {
 
 
             await fetchData();
-            toast({ title: "Success", description: "Payment confirmed. An email draft has been opened.", action: <CheckCircle className="h-5 w-5 text-green-500" />});
+            toast({ title: "Success", description: "Payment confirmed. A new tournament may have been created.", action: <CheckCircle className="h-5 w-5 text-green-500" />});
         } catch (error: any) {
             console.error("Error confirming payment: ", error);
             let errorMessage = "Failed to confirm payment.";

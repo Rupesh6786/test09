@@ -48,13 +48,15 @@ export default function TournamentsPage() {
     }
 
     const visible = [];
-    // For each series, find the latest tournament (highest seriesNumber) and show only that one.
+    // For each series, find the tournament with the highest seriesNumber and show only that one.
     for (const series of seriesMap.values()) {
         if (series.length > 0) {
             series.sort((a, b) => (b.seriesNumber || 1) - (a.seriesNumber || 1));
             visible.push(series[0]);
         }
     }
+    // Finally, sort the visible tournaments by their original date to keep a consistent order
+    visible.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     return visible;
   };
 
@@ -62,9 +64,9 @@ export default function TournamentsPage() {
   const ongoing = useMemo(() => getVisibleTournaments(tournaments, 'Ongoing'), [tournaments]);
 
   const renderSkeletons = (count: number) => (
-    <div className="mt-8 flex flex-wrap justify-center gap-6">
+    <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       {Array.from({ length: count }).map((_, i) => (
-        <Card key={i} className="w-full max-w-sm">
+        <Card key={i} className="w-full">
             <CardContent className="p-4">
                 <Skeleton className="h-[300px] w-full" />
             </CardContent>
@@ -93,7 +95,7 @@ export default function TournamentsPage() {
               <TabsContent value="upcoming">
                 {isLoading ? renderSkeletons(4) : (
                   upcoming.length > 0 ? (
-                    <div className="mt-8 flex flex-wrap justify-center gap-6">
+                    <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                       {upcoming.map((tournament) => (
                         <TournamentCard key={tournament.id} tournament={tournament} />
                       ))}
@@ -106,7 +108,7 @@ export default function TournamentsPage() {
               <TabsContent value="ongoing">
                  {isLoading ? renderSkeletons(2) : (
                   ongoing.length > 0 ? (
-                    <div className="mt-8 flex flex-wrap justify-center gap-6">
+                    <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                       {ongoing.map((tournament) => (
                         <TournamentCard key={tournament.id} tournament={tournament} />
                       ))}
