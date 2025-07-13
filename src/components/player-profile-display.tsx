@@ -76,7 +76,7 @@ export function PlayerProfileDisplay({
              {isCurrentUser && (
                 <div className="flex justify-between items-center">
                     <Link href="/" className="flex items-center space-x-2">
-                        <span className="text-2xl font-bold tracking-wider text-primary font-headline">BATTLEBUCKS</span>
+                        <span className="text-2xl font-bold tracking-wider text-primary font-headline">BattleStacks</span>
                     </Link>
                     <Button variant="ghost" size="icon" onClick={onEditClick}><Settings className="w-6 h-6" /></Button>
                 </div>
