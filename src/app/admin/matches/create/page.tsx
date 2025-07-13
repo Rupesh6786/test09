@@ -48,10 +48,7 @@ export default function ManageMatchesPage() {
   const [editingTournament, setEditingTournament] = useState<Tournament | null>(null);
   const [isBracketManagerOpen, setIsBracketManagerOpen] = useState(false);
   const [selectedTournamentForBracket, setSelectedTournamentForBracket] = useState<Tournament | null>(null);
-  const [isSeriesViewOpen, setIsSeriesViewOpen] = useState(false);
-  const [seriesTournaments, setSeriesTournaments] = useState<Tournament[]>([]);
-  const [selectedSeriesId, setSelectedSeriesId] = useState<string | null>(null);
-
+  
   const { toast } = useToast();
 
   const fetchTournaments = async () => {
@@ -85,38 +82,16 @@ export default function ManageMatchesPage() {
   }, [tournaments, isBracketManagerOpen, selectedTournamentForBracket]);
 
   const filteredTournaments = useMemo(() => {
-    // Create a map to track the latest tournament in each series
-    const latestInSeries = new Map<string, Tournament>();
-
-    tournaments
+    return tournaments
       .filter(t => 
         searchTerm === '' || 
         t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         t.game.toLowerCase().includes(searchTerm.toLowerCase())
       )
       .filter(t => gameFilter === 'all' || t.game === gameFilter)
-      .filter(t => statusFilter === 'all' || t.status === statusFilter)
-      .forEach(t => {
-          const seriesId = t.seriesId || t.id;
-          const currentLatest = latestInSeries.get(seriesId);
-          if (!currentLatest || (t.seriesNumber || 1) > (currentLatest.seriesNumber || 1)) {
-              latestInSeries.set(seriesId, t);
-          }
-      });
-
-    return Array.from(latestInSeries.values());
+      .filter(t => statusFilter === 'all' || t.status === statusFilter);
   }, [tournaments, searchTerm, gameFilter, statusFilter]);
   
-  const handleViewSeries = (seriesId: string) => {
-    const relatedTournaments = tournaments
-        .filter(t => (t.seriesId || t.id) === seriesId)
-        .sort((a, b) => (a.seriesNumber || 1) - (b.seriesNumber || 1));
-    setSeriesTournaments(relatedTournaments);
-    setSelectedSeriesId(seriesId);
-    setIsSeriesViewOpen(true);
-  };
-
-
   const handleAddNew = () => {
     setEditingTournament(null);
     setIsMatchFormOpen(true);
@@ -173,7 +148,7 @@ export default function ManageMatchesPage() {
             await updateDoc(docRef, tournamentData);
             toast({ title: "Success", description: "Match details updated." });
         } else {
-            await addDoc(collection(db, "tournaments"), { ...tournamentData, slotsAllotted: 0, seriesNumber: 1 });
+            await addDoc(collection(db, "tournaments"), { ...tournamentData, slotsAllotted: 0 });
             toast({ title: "Success", description: "New match created." });
         }
         fetchTournaments(); // Refresh list
@@ -385,9 +360,6 @@ export default function ManageMatchesPage() {
                     <TableRow key={tournament.id}>
                       <TableCell className="font-medium">
                         {tournament.title}
-                        {tournaments.some(t => t.seriesId === (tournament.seriesId || tournament.id) && t.id !== tournament.id) ? (
-                            <Badge variant="secondary" className="ml-2">Series</Badge>
-                        ) : tournament.seriesNumber && tournament.seriesNumber > 1 ? <span className="text-muted-foreground text-xs"> (Series)</span> : null}
                       </TableCell>
                       <TableCell className="hidden md:table-cell">{tournament.game}</TableCell>
                       <TableCell className="hidden sm:table-cell">{tournament.slotsAllotted || 0}/{tournament.slotsTotal}</TableCell>
@@ -395,9 +367,6 @@ export default function ManageMatchesPage() {
                       <TableCell>₹{tournament.prizePool.toLocaleString()}</TableCell>
                       <TableCell className="text-center"><Badge variant={getStatusBadgeVariant(tournament.status)}>{tournament.status}</Badge></TableCell>
                       <TableCell className="text-right">
-                        {tournaments.some(t => t.seriesId === (tournament.seriesId || tournament.id)) && (
-                            <Button variant="ghost" size="icon" onClick={() => handleViewSeries(tournament.seriesId || tournament.id)}><Eye className="w-4 h-4"/></Button>
-                        )}
                         <Button variant="ghost" size="icon" onClick={() => handleEdit(tournament)}><Edit className="w-4 h-4" /></Button>
                         <Button variant="ghost" size="icon" onClick={() => handleManageBracket(tournament)} disabled={tournament.status === 'Upcoming'}><Award className="w-4 h-4" /></Button>
                         <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(tournament.id)}><Trash2 className="w-4 h-4" /></Button>
@@ -426,9 +395,6 @@ export default function ManageMatchesPage() {
                             <div>
                                 <p className="font-bold">{tournament.title}</p>
                                 <p className="text-sm text-muted-foreground">{tournament.game}</p>
-                                {tournaments.some(t => t.seriesId === (tournament.seriesId || tournament.id)) && (
-                                    <Badge variant="secondary" className="mt-1">Series</Badge>
-                                )}
                             </div>
                             <Badge variant={getStatusBadgeVariant(tournament.status)} className="shrink-0">{tournament.status}</Badge>
                         </div>
@@ -447,9 +413,6 @@ export default function ManageMatchesPage() {
                             </div>
                         </div>
                         <div className="flex justify-end gap-1 mt-4 pt-4 border-t border-muted-foreground/20">
-                            {tournaments.some(t => t.seriesId === (tournament.seriesId || tournament.id)) && (
-                                <Button variant="ghost" size="sm" onClick={() => handleViewSeries(tournament.seriesId || tournament.id)}><Eye className="w-4 h-4 mr-2"/>View Series</Button>
-                            )}
                             <Button variant="ghost" size="sm" onClick={() => handleEdit(tournament)}><Edit className="w-4 h-4 mr-2" />Edit</Button>
                             <Button variant="ghost" size="sm" onClick={() => handleManageBracket(tournament)} disabled={tournament.status === 'Upcoming'}><Award className="w-4 h-4 mr-2" />Manage</Button>
                             <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleDelete(tournament.id)}><Trash2 className="w-4 h-4 mr-2" />Delete</Button>
@@ -478,16 +441,7 @@ export default function ManageMatchesPage() {
         onBracketUpdate={handleBracketUpdate}
         onFinalWinner={handleFinalWinner}
         onBracketReset={handleResetBracket}
-        onTeamRemove={handleTeamRemoveClick}
-      />
-      <SeriesViewDialog
-        isOpen={isSeriesViewOpen}
-        setIsOpen={setIsSeriesViewOpen}
-        tournaments={seriesTournaments}
-        onManageBracket={handleManageBracket}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        getStatusBadgeVariant={getStatusBadgeVariant}
+        onTeamRemove={handleRemoveTeam}
       />
     </div>
   );
@@ -600,70 +554,6 @@ function MatchFormDialog({ isOpen, setIsOpen, onSave, tournament }: { isOpen: bo
         </Dialog>
     );
 }
-
-// Sub-component for viewing tournament series
-function SeriesViewDialog({
-  isOpen,
-  setIsOpen,
-  tournaments,
-  onManageBracket,
-  onEdit,
-  onDelete,
-  getStatusBadgeVariant,
-}: {
-  isOpen: boolean;
-  setIsOpen: (open: boolean) => void;
-  tournaments: Tournament[];
-  onManageBracket: (tournament: Tournament) => void;
-  onEdit: (tournament: Tournament) => void;
-  onDelete: (id: string) => void;
-  getStatusBadgeVariant: (status: string) => "success" | "warning" | "secondary" | "default";
-}) {
-  const seriesTitle = tournaments.length > 0 ? tournaments[0].title : "Tournament Series";
-
-  return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Viewing Series: "{seriesTitle}"</DialogTitle>
-          <DialogDescription>
-            All matches associated with this series are listed below.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="max-h-[60vh] overflow-y-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Match</TableHead>
-                <TableHead>Slots</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {tournaments.map((t) => (
-                <TableRow key={t.id}>
-                  <TableCell>Match {t.seriesNumber}</TableCell>
-                  <TableCell>{t.slotsAllotted || 0}/{t.slotsTotal}</TableCell>
-                  <TableCell><Badge variant={getStatusBadgeVariant(t.status)}>{t.status}</Badge></TableCell>
-                  <TableCell className="text-right">
-                     <Button variant="ghost" size="icon" onClick={() => { onEdit(t); setIsOpen(false); }}><Edit className="w-4 h-4" /></Button>
-                     <Button variant="ghost" size="icon" onClick={() => { onManageBracket(t); setIsOpen(false); }} disabled={t.status === 'Upcoming'}><Award className="w-4 h-4" /></Button>
-                     <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => { onDelete(t.id); setIsOpen(false); }}><Trash2 className="w-4 h-4" /></Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-        <DialogFooter>
-          <DialogClose asChild><Button variant="outline">Close</Button></DialogClose>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 
 const getRoundTitle = (matchupCount: number, totalSlots: number) => {
     if (matchupCount === 1) return 'Finals';
@@ -1018,4 +908,3 @@ function BracketManagerDialog({
         </Dialog>
     );
 }
-

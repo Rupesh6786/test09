@@ -97,28 +97,9 @@ export default function AdminRegistrationsPage() {
                     confirmedTeams: arrayUnion({ teamName: registration.teamName || '', gameIds: registration.gameIds || [] })
                 });
 
-                // Check if the tournament is now full and it's an 'Upcoming' one
+                // If the tournament is now full, mark it as 'Ongoing'
                 if (newSlotsAllotted === tournamentData.slotsTotal && tournamentData.status === 'Upcoming') {
-                    // Mark the current tournament as 'Ongoing' as it's now full and ready
                     transaction.update(tournamentRef, { status: 'Ongoing' });
-                    
-                    // Create a new tournament as a clone
-                    // Omit fields that should be reset or are unique to the document
-                    const { id, slotsAllotted, confirmedTeams, bracket, winner, ...restOfData } = tournamentData;
-
-                    const newTournamentData: Omit<Tournament, 'id'> = {
-                        ...restOfData,
-                        slotsAllotted: 0,
-                        confirmedTeams: [],
-                        bracket: [],
-                        winner: undefined,
-                        status: 'Upcoming', // The new one is upcoming
-                        seriesId: tournamentData.seriesId || tournamentDoc.id, // Use existing series or create new one from original tournament
-                        seriesNumber: (tournamentData.seriesNumber || 1) + 1, // Increment series number
-                    };
-
-                    const newTournamentRef = doc(collection(db, 'tournaments'));
-                    transaction.set(newTournamentRef, newTournamentData);
                 }
             });
 
@@ -138,7 +119,7 @@ export default function AdminRegistrationsPage() {
 
 
             await fetchData();
-            toast({ title: "Success", description: "Payment confirmed. A new tournament may have been created.", action: <CheckCircle className="h-5 w-5 text-green-500" />});
+            toast({ title: "Success", description: "Payment confirmed.", action: <CheckCircle className="h-5 w-5 text-green-500" />});
         } catch (error: any) {
             console.error("Error confirming payment: ", error);
             let errorMessage = "Failed to confirm payment.";

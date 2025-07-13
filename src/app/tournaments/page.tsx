@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useState, useEffect, useMemo } from 'react';
 import type { Tournament } from '@/lib/data';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, where } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -34,34 +34,8 @@ export default function TournamentsPage() {
     fetchTournaments();
   }, []);
 
-  const getVisibleTournaments = (allTournaments: Tournament[], status: 'Upcoming' | 'Ongoing'): Tournament[] => {
-    const relevantTournaments = allTournaments.filter(t => t.status === status);
-    const seriesMap = new Map<string, Tournament[]>();
-
-    // Group tournaments by series
-    for (const t of relevantTournaments) {
-        const seriesId = t.seriesId || t.id;
-        if (!seriesMap.has(seriesId)) {
-            seriesMap.set(seriesId, []);
-        }
-        seriesMap.get(seriesId)!.push(t);
-    }
-
-    const visible = [];
-    // For each series, find the tournament with the highest seriesNumber and show only that one.
-    for (const series of seriesMap.values()) {
-        if (series.length > 0) {
-            series.sort((a, b) => (b.seriesNumber || 1) - (a.seriesNumber || 1));
-            visible.push(series[0]);
-        }
-    }
-    // Finally, sort the visible tournaments by their original date to keep a consistent order
-    visible.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    return visible;
-  };
-
-  const upcoming = useMemo(() => getVisibleTournaments(tournaments, 'Upcoming'), [tournaments]);
-  const ongoing = useMemo(() => getVisibleTournaments(tournaments, 'Ongoing'), [tournaments]);
+  const upcoming = useMemo(() => tournaments.filter(t => t.status === 'Upcoming'), [tournaments]);
+  const ongoing = useMemo(() => tournaments.filter(t => t.status === 'Ongoing'), [tournaments]);
 
   const renderSkeletons = (count: number) => (
     <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
