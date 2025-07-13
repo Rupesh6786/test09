@@ -19,12 +19,13 @@ import { TournamentBracket } from '@/components/tournament-bracket';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
 
-function PrizeCard({ rank, icon, amount, colorClass }: { rank: string, icon: string, amount: number, colorClass: string }) {
+function PrizeCard({ rank, iconColor, amount, colorClass }: { rank: string, iconColor: string, amount: number, colorClass: string }) {
   return (
-    <Card className={`relative overflow-hidden border-2 ${colorClass}`}>
+    <Card className={cn('relative overflow-hidden border-2', colorClass)}>
       <CardContent className="p-4 text-center">
-        <Image src={icon} alt={`${rank} prize`} width={80} height={80} className="mx-auto mb-2" data-ai-hint="trophy award" />
+        <Trophy className={cn("w-20 h-20 mx-auto mb-2", iconColor)} />
         <p className="text-lg font-bold">{rank}</p>
         <p className="text-2xl font-bold text-primary">₹{amount.toLocaleString()}</p>
       </CardContent>
@@ -130,9 +131,9 @@ export default function TournamentDetailPage() {
             <div>
               <h2 className="text-2xl font-headline text-accent mb-4 text-center">Prize Distribution</h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                <PrizeCard rank="1st Place" icon="/img/trophy_gold.png" amount={prizeDistribution[0]} colorClass="border-yellow-400" />
-                {prizeDistribution.length > 1 && <PrizeCard rank="2nd Place" icon="/img/trophy_silver.png" amount={prizeDistribution[1]} colorClass="border-slate-400" />}
-                {prizeDistribution.length > 2 && <PrizeCard rank="3rd Place" icon="/img/trophy_bronze.png" amount={prizeDistribution[2]} colorClass="border-amber-600" />}
+                <PrizeCard rank="1st Place" iconColor="text-yellow-400" amount={prizeDistribution[0]} colorClass="border-yellow-400" />
+                {prizeDistribution.length > 1 && <PrizeCard rank="2nd Place" iconColor="text-slate-400" amount={prizeDistribution[1]} colorClass="border-slate-400" />}
+                {prizeDistribution.length > 2 && <PrizeCard rank="3rd Place" iconColor="text-amber-600" amount={prizeDistribution[2]} colorClass="border-amber-600" />}
               </div>
             </div>
           )}
