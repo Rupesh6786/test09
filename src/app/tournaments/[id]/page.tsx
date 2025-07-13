@@ -21,9 +21,23 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 
-function PrizeCard({ rank, iconColor, amount, colorClass }: { rank: string, iconColor: string, amount: number, colorClass: string }) {
+function PrizeCard({ rank, amount }: { rank: string, amount: number }) {
+    const getRankDetails = () => {
+        switch (rank) {
+            case '1st Place':
+                return { iconColor: "text-yellow-400", borderColor: "border-yellow-400/50" };
+            case '2nd Place':
+                return { iconColor: "text-slate-400", borderColor: "border-slate-400/50" };
+            case '3rd Place':
+                return { iconColor: "text-amber-600", borderColor: "border-amber-600/50" };
+            default:
+                return { iconColor: "text-foreground", borderColor: "border-border" };
+        }
+    }
+    const { iconColor, borderColor } = getRankDetails();
+
   return (
-    <Card className={cn('relative overflow-hidden border-2', colorClass)}>
+    <Card className={cn('relative overflow-hidden border-2', borderColor)}>
       <CardContent className="p-4 text-center">
         <Trophy className={cn("w-20 h-20 mx-auto mb-2", iconColor)} />
         <p className="text-lg font-bold">{rank}</p>
@@ -131,15 +145,15 @@ export default function TournamentDetailPage() {
             <div>
               <h2 className="text-2xl font-headline text-accent mb-4 text-center">Prize Distribution</h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                <PrizeCard rank="1st Place" iconColor="text-yellow-400" amount={prizeDistribution[0]} colorClass="border-yellow-400" />
-                {prizeDistribution.length > 1 && <PrizeCard rank="2nd Place" iconColor="text-slate-400" amount={prizeDistribution[1]} colorClass="border-slate-400" />}
-                {prizeDistribution.length > 2 && <PrizeCard rank="3rd Place" iconColor="text-amber-600" amount={prizeDistribution[2]} colorClass="border-amber-600" />}
+                <PrizeCard rank="1st Place" amount={prizeDistribution[0]} />
+                {prizeDistribution.length > 1 && <PrizeCard rank="2nd Place" amount={prizeDistribution[1]} />}
+                {prizeDistribution.length > 2 && <PrizeCard rank="3rd Place" amount={prizeDistribution[2]} />}
               </div>
             </div>
           )}
 
           <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-             <Tabs defaultValue="bracket" className="w-full">
+             <Tabs defaultValue="rules" className="w-full">
               <CardHeader>
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="bracket">Bracket</TabsTrigger>
