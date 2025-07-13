@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
@@ -7,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, updateDoc, query, orderBy } from 'firebase/firestore';
+import { collection, doc, updateDoc, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { Loader2, MailCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -20,27 +21,24 @@ export default function AdminInquiriesPage() {
     const [statusFilter, setStatusFilter] = useState('all');
     const { toast } = useToast();
 
-    const fetchInquiries = async () => {
+    useEffect(() => {
         setIsLoading(true);
-        try {
-            const q = query(collection(db, "inquiries"), orderBy("submittedAt", "desc"));
-            const querySnapshot = await getDocs(q);
+        const q = query(collection(db, "inquiries"), orderBy("submittedAt", "desc"));
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
             const fetchedInquiries = querySnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data(),
             })) as Inquiry[];
             setInquiries(fetchedInquiries);
-        } catch (error) {
+            setIsLoading(false);
+        }, (error) => {
             console.error("Error fetching inquiries: ", error);
             toast({ title: "Error", description: "Failed to fetch inquiries.", variant: "destructive" });
-        } finally {
             setIsLoading(false);
-        }
-    };
+        });
 
-    useEffect(() => {
-        fetchInquiries();
-    }, []);
+        return () => unsubscribe();
+    }, [toast]);
     
     const filteredInquiries = useMemo(() => {
         return inquiries
@@ -51,7 +49,6 @@ export default function AdminInquiriesPage() {
         const inquiryRef = doc(db, 'inquiries', inquiryId);
         try {
             await updateDoc(inquiryRef, { status: 'Read' });
-            await fetchInquiries(); // Re-fetch to update UI
             toast({
                 title: "Success",
                 description: "Inquiry marked as read."

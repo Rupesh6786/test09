@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { Header } from '@/components/layout/header';
@@ -8,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useState, useEffect, useMemo } from 'react';
 import type { Tournament } from '@/lib/data';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, orderBy, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, where } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -17,21 +18,19 @@ export default function TournamentsPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchTournaments = async () => {
-      setIsLoading(true);
-      try {
-        const q = query(collection(db, 'tournaments'), orderBy('date', 'desc'));
-        const querySnapshot = await getDocs(q);
+    setIsLoading(true);
+    const q = query(collection(db, 'tournaments'), orderBy('date', 'desc'));
+    
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
         const fetchedTournaments = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Tournament[];
         setTournaments(fetchedTournaments);
-      } catch (error) {
-        console.error("Error fetching tournaments: ", error);
-      } finally {
         setIsLoading(false);
-      }
-    };
+    }, (error) => {
+        console.error("Error fetching tournaments: ", error);
+        setIsLoading(false);
+    });
 
-    fetchTournaments();
+    return () => unsubscribe();
   }, []);
 
   const upcoming = useMemo(() => tournaments.filter(t => t.status === 'Upcoming'), [tournaments]);

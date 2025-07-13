@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { useEffect, useState, useMemo } from 'react';
@@ -8,7 +9,7 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContaine
 import { Button } from "@/components/ui/button";
 import { Download, Loader2, CheckCircle } from "lucide-react";
 import { db } from '@/lib/firebase';
-import { collection, query, getDocs, doc, runTransaction, orderBy } from 'firebase/firestore';
+import { collection, query, doc, runTransaction, orderBy, onSnapshot } from 'firebase/firestore';
 import type { RedeemRequest } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -36,28 +37,23 @@ export default function RevenuePage() {
     const [isLoading, setIsLoading] = useState(true);
     const { toast } = useToast();
 
-    const fetchData = async () => {
+    useEffect(() => {
         setIsLoading(true);
-        try {
-            // Fetch all redeem requests
-            const reqSnapshot = await getDocs(query(collection(db, "redeemRequests"), orderBy("requestedAt", "desc")));
-            const allRequests = reqSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as RedeemRequest[];
-            
-            // Filter client-side
+        const q = query(collection(db, "redeemRequests"), orderBy("requestedAt", "desc"));
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const allRequests = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as RedeemRequest[];
             setPendingRequests(allRequests.filter(req => req.status === 'Pending'));
             setCompletedRequests(allRequests.filter(req => req.status === 'Completed'));
-
-        } catch (error) {
+            setIsLoading(false);
+        }, (error) => {
             console.error("Error fetching revenue data:", error);
             toast({ title: "Error", description: "Failed to fetch revenue data.", variant: "destructive" });
-        } finally {
             setIsLoading(false);
-        }
-    };
+        });
 
-    useEffect(() => {
-        fetchData();
-    }, []);
+        return () => unsubscribe();
+    }, [toast]);
 
     const handleMarkAsPaid = async (request: RedeemRequest) => {
         const requestRef = doc(db, 'redeemRequests', request.id);
@@ -79,7 +75,6 @@ export default function RevenuePage() {
             });
             
             toast({ title: "Success", description: "Request marked as paid and user balance updated.", action: <CheckCircle className="h-5 w-5 text-green-500" /> });
-            await fetchData(); // Refresh the list
         } catch (error: any) {
              console.error("Error processing payment: ", error);
             let errorMessage = "Failed to process payment.";
@@ -100,7 +95,6 @@ export default function RevenuePage() {
 
         const headers = ['Player Name', 'Email', 'Phone Number', 'Date Completed', 'Amount', 'Status'];
         
-        // Escape commas and quotes in data
         const escapeCSV = (str: string | number) => {
             const s = String(str);
             if (s.includes(',') || s.includes('"') || s.includes('\n')) {

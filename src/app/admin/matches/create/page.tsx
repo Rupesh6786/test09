@@ -26,9 +26,9 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { useToast } from '@/hooks/use-toast';
-import { Search, PlusCircle, Edit, Trash2, Award, Loader2, Shuffle, Eye } from 'lucide-react';
+import { Search, PlusCircle, Edit, Trash2, Award, Loader2, Shuffle, Eye, Users } from 'lucide-react';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, addDoc, updateDoc, deleteDoc, query, orderBy, runTransaction, where, limit, increment, arrayRemove, getDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, addDoc, updateDoc, deleteDoc, query, orderBy, runTransaction, where, limit, increment, arrayRemove, getDoc, onSnapshot } from 'firebase/firestore';
 import type { Tournament, BracketTeam, BracketRound, BracketMatchup } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -48,33 +48,27 @@ export default function ManageMatchesPage() {
   const [editingTournament, setEditingTournament] = useState<Tournament | null>(null);
   const [isBracketManagerOpen, setIsBracketManagerOpen] = useState(false);
   const [selectedTournamentForBracket, setSelectedTournamentForBracket] = useState<Tournament | null>(null);
-  
   const { toast } = useToast();
 
-  const fetchTournaments = async () => {
+  useEffect(() => {
     setIsLoading(true);
-    try {
-        const q = query(collection(db, "tournaments"), orderBy("date", "desc"));
-        const querySnapshot = await getDocs(q);
+    const q = query(collection(db, "tournaments"), orderBy("date", "desc"));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
         const fetchedTournaments = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Tournament[];
         setTournaments(fetchedTournaments);
-    } catch (error) {
+        setIsLoading(false);
+    }, (error) => {
         console.error("Error fetching tournaments: ", error);
         toast({ title: "Error", description: "Failed to fetch tournaments.", variant: "destructive" });
-    } finally {
         setIsLoading(false);
-    }
-  }
+    });
 
-  useEffect(() => {
-    fetchTournaments();
-  }, []);
+    return () => unsubscribe();
+  }, [toast]);
   
   useEffect(() => {
-    // This effect ensures the dialog updates if the underlying tournament data changes while it's open.
     if (isBracketManagerOpen && selectedTournamentForBracket) {
       const updatedTournament = tournaments.find(t => t.id === selectedTournamentForBracket.id);
-      // Deep compare with JSON.stringify to avoid infinite loops from object references
       if (updatedTournament && JSON.stringify(updatedTournament) !== JSON.stringify(selectedTournamentForBracket)) {
         setSelectedTournamentForBracket(updatedTournament);
       }
@@ -107,7 +101,6 @@ export default function ManageMatchesPage() {
     try {
         await deleteDoc(doc(db, "tournaments", id));
         toast({ title: "Match Deleted", description: "The match has been removed." });
-        fetchTournaments(); // Refresh list
     } catch (error) {
         console.error("Error deleting tournament: ", error);
         toast({ title: "Error", description: "Failed to delete match.", variant: "destructive" });
@@ -117,7 +110,6 @@ export default function ManageMatchesPage() {
   const handleManageBracket = async (tournament: Tournament) => {
     let tournamentToOpen = tournament;
 
-    // If bracket doesn't exist and conditions are met, generate and save it first.
     if ((!tournament.bracket || tournament.bracket.length === 0) && tournament.confirmedTeams && tournament.slotsTotal > 0 && [2, 4, 8, 16, 32].includes(tournament.slotsTotal)) {
         toast({ title: "Generating Bracket...", description: "Please wait a moment." });
         const newBracket = generateInitialBracket(tournament.confirmedTeams, tournament.slotsTotal);
@@ -133,7 +125,7 @@ export default function ManageMatchesPage() {
         } catch (error) {
             console.error("Error generating bracket:", error);
             toast({ title: "Error", description: "Could not generate the bracket.", variant: "destructive" });
-            return; // Don't open the dialog if generation fails
+            return;
         }
     }
 
@@ -151,7 +143,6 @@ export default function ManageMatchesPage() {
             await addDoc(collection(db, "tournaments"), { ...tournamentData, slotsAllotted: 0 });
             toast({ title: "Success", description: "New match created." });
         }
-        fetchTournaments(); // Refresh list
         setIsMatchFormOpen(false);
         setEditingTournament(null);
     } catch (error) {
@@ -163,7 +154,6 @@ export default function ManageMatchesPage() {
   const handleBracketUpdate = async (tournamentId: string, newBracket: BracketRound[]) => {
     const docRef = doc(db, "tournaments", tournamentId);
     await updateDoc(docRef, { bracket: newBracket });
-    await fetchTournaments();
   };
 
   const handleFinalWinner = async (tournament: Tournament, winningTeam: BracketTeam) => {
@@ -187,14 +177,12 @@ export default function ManageMatchesPage() {
                 throw new Error("Winner's user profile not found.");
             }
 
-            // Update user's wallet and stats
             transaction.update(winnerRef, {
                 walletBalance: increment(tournament.prizePool),
                 totalEarnings: increment(tournament.prizePool),
                 matchesWon: increment(1)
             });
 
-            // Update tournament status and set winner
             transaction.update(tournamentRef, {
                 status: 'Completed',
                 winner: {
@@ -204,7 +192,6 @@ export default function ManageMatchesPage() {
                 }
             });
 
-            // Create a log in the winners collection
             transaction.set(winnerLogRef, {
                 tournamentId: tournament.id,
                 tournamentTitle: tournament.title,
@@ -220,7 +207,6 @@ export default function ManageMatchesPage() {
             title: "Winner Announced!",
             description: `${winningTeam.teamName} has been awarded ₹${tournament.prizePool.toLocaleString()}.`
         });
-        fetchTournaments(); // Refresh list
         setIsBracketManagerOpen(false);
         setSelectedTournamentForBracket(null);
     } catch (error: any) {
@@ -240,11 +226,9 @@ export default function ManageMatchesPage() {
 
         const docRef = doc(db, "tournaments", tournamentId);
         try {
-            // This now directly regenerates the bracket and saves it.
             const resetBracket = generateInitialBracket(tournamentToReset.confirmedTeams, tournamentToReset.slotsTotal);
             await updateDoc(docRef, { bracket: resetBracket, winner: null, status: 'Ongoing' });
             toast({ title: "Success", description: "Bracket progress has been reset." });
-            await fetchTournaments();
         } catch (error) {
             console.error("Error resetting bracket: ", error);
             toast({ title: "Error", description: "Could not reset the bracket.", variant: "destructive" });
@@ -270,29 +254,24 @@ export default function ManageMatchesPage() {
     
                 const currentTournamentData = tournamentDoc.data() as Tournament;
     
-                // Filter out the team to remove
                 const newConfirmedTeams = (currentTournamentData.confirmedTeams || []).filter(
                     (team) => team.teamName !== teamToRemove.teamName
                 );
     
-                // Regenerate the entire bracket with the updated team list
                 const newBracket = generateInitialBracket(newConfirmedTeams, currentTournamentData.slotsTotal);
                 
-                // Update tournament doc with new teams list, decremented slot count, and the newly generated bracket
                 transaction.update(tournamentRef, {
                     slotsAllotted: increment(-1),
                     confirmedTeams: newConfirmedTeams,
                     bracket: newBracket
                 });
                 
-                // Also delete the registration document to maintain data consistency
                 if (registrationDoc) {
                     transaction.delete(registrationDoc.ref);
                 }
             });
     
             toast({ title: "Team Removed", description: `${teamToRemove.teamName} has been removed and the bracket has been updated.` });
-            await fetchTournaments(); // Refresh data to update the dialog via the useEffect hook
         } catch (error: any) {
             console.error("Error removing team: ", error);
             toast({ title: "Error", description: error.message || "Failed to remove team.", variant: "destructive" });
@@ -338,7 +317,6 @@ export default function ManageMatchesPage() {
 
       <Card>
         <CardContent className="p-0">
-          {/* Desktop Table View */}
           <div className="hidden md:block">
             <Table>
               <TableHeader>
@@ -382,7 +360,6 @@ export default function ManageMatchesPage() {
             </Table>
           </div>
 
-          {/* Mobile Card View */}
           <div className="space-y-4 p-4 md:hidden">
             {isLoading ? (
                 <div className="flex justify-center items-center h-24">
@@ -566,12 +543,10 @@ const generateInitialBracket = (teams: BracketTeam[], slotsTotal: number): Brack
     let rounds: BracketRound[] = [];
     let currentTeams: (BracketTeam | null)[] = [...teams];
     
-    // Pad with nulls if not enough teams
     while (currentTeams.length < slotsTotal) {
         currentTeams.push(null);
     }
     
-    // Shuffle teams for random matchups
     for (let i = currentTeams.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [currentTeams[i], currentTeams[j]] = [currentTeams[j], currentTeams[i]];
@@ -640,21 +615,14 @@ function BracketManagerDialog({
         const newBracket = JSON.parse(JSON.stringify(bracket));
         const newTeam = newTeamName === 'none' ? null : allConfirmedTeams.find(t => t.teamName === newTeamName);
     
-        // Place the new team
-        newBracket[0].matchups[matchupIndex][teamSlot] = newTeam;
-    
-        // Reset progress from this matchup onwards
         const resetProgressFrom = (bracketToReset: BracketRound[], roundIdx: number, matchupIdx: number) => {
-            // Clear current winner
             bracketToReset[roundIdx].matchups[matchupIdx].winner = null;
     
-            // Clear subsequent rounds
             if (roundIdx + 1 < bracketToReset.length) {
                 const nextRoundIdx = roundIdx + 1;
                 const nextMatchupIdx = Math.floor(matchupIdx / 2);
                 const nextTeamSlot = matchupIdx % 2 === 0 ? 'team1' : 'team2';
                 
-                // Only clear and recurse if the slot was actually filled
                 if (bracketToReset[nextRoundIdx].matchups[nextMatchupIdx][nextTeamSlot]) {
                     bracketToReset[nextRoundIdx].matchups[nextMatchupIdx][nextTeamSlot] = null;
                     resetProgressFrom(bracketToReset, nextRoundIdx, nextMatchupIdx);
@@ -663,22 +631,20 @@ function BracketManagerDialog({
         }
     
         resetProgressFrom(newBracket, 0, matchupIndex);
+        newBracket[0].matchups[matchupIndex][teamSlot] = newTeam;
         setBracket(newBracket);
     };
 
     const handleWinnerSelect = (roundIndex: number, matchupIndex: number, winner: BracketTeam | null) => {
         if (!bracket || !winner) return;
     
-        // Create a deep copy to avoid state mutation issues.
         const newBracket = JSON.parse(JSON.stringify(bracket));
         const currentMatchup = newBracket[roundIndex].matchups[matchupIndex];
         
-        // If the winner is already selected, do nothing.
         if (currentMatchup.winner?.teamName === winner.teamName) return;
     
         currentMatchup.winner = winner;
     
-        // Propagate the winner to the next round
         if (roundIndex + 1 < newBracket.length) {
             const nextRoundMatchupIndex = Math.floor(matchupIndex / 2);
             const teamSlot = matchupIndex % 2 === 0 ? 'team1' : 'team2';

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
@@ -8,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, query, orderBy, getDoc } from 'firebase/firestore';
+import { collection, getDoc, doc, query, orderBy, onSnapshot, Unsubscribe } from 'firebase/firestore';
 import { Loader2, PlusCircle, Edit, Send, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Tournament, UserRegistration, EmailTemplate } from '@/lib/data';
@@ -38,33 +39,34 @@ export default function AutomationPage() {
     const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
 
     const fetchData = async () => {
-        setIsLoading(true);
-        try {
-            const templatesPromise = getDocs(query(collection(db, "templates"), orderBy("createdAt", "desc")));
-            const tournamentsPromise = getDocs(query(collection(db, "tournaments"), orderBy("date", "desc")));
-            const registrationsPromise = getDocs(collection(db, 'registrations'));
-            
-            const [templateSnapshot, tourneySnapshot, regSnapshot] = await Promise.all([templatesPromise, tournamentsPromise, registrationsPromise]);
-
-            const fetchedTemplates = templateSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as EmailTemplate[];
-            setTemplates(fetchedTemplates);
-
-            const fetchedTournaments = tourneySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Tournament[];
-            setTournaments(fetchedTournaments);
-
-            const fetchedRegistrations = regSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as UserRegistration[];
-            setRegistrations(fetchedRegistrations);
-
-        } catch (error) {
-            console.error("Error fetching data: ", error);
-            toast({ title: "Error", description: "Failed to fetch required data.", variant: "destructive" });
-        } finally {
-            setIsLoading(false);
-        }
+        // This is now just a wrapper for the listeners
+        // Listeners are set up in useEffect below
     };
 
     useEffect(() => {
-        fetchData();
+        setIsLoading(true);
+        const unsubscribes: Unsubscribe[] = [];
+
+        const templatesQuery = query(collection(db, "templates"), orderBy("createdAt", "desc"));
+        unsubscribes.push(onSnapshot(templatesQuery, (snapshot) => {
+            setTemplates(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as EmailTemplate[]);
+        }));
+
+        const tournamentsQuery = query(collection(db, "tournaments"), orderBy("date", "desc"));
+        unsubscribes.push(onSnapshot(tournamentsQuery, (snapshot) => {
+            setTournaments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Tournament[]);
+        }));
+
+        const registrationsQuery = collection(db, 'registrations');
+        unsubscribes.push(onSnapshot(registrationsQuery, (snapshot) => {
+            setRegistrations(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as UserRegistration[]);
+        }));
+
+        setIsLoading(false);
+
+        return () => {
+            unsubscribes.forEach(unsub => unsub());
+        };
     }, []);
 
     const selectedTemplate = useMemo(() => templates.find(t => t.id === selectedTemplateId), [templates, selectedTemplateId]);
@@ -75,12 +77,10 @@ export default function AutomationPage() {
         const teams = registrations
             .filter(r => r.tournamentId === selectedTournament.id)
             .map(r => r.teamName);
-        // Return unique team names
         return [...new Set(teams)].map(teamName => ({ value: teamName, label: teamName }));
     }, [registrations, selectedTournament]);
 
     useEffect(() => {
-        // Reset selected teams when tournament changes
         setSelectedTeamNames([]);
     }, [selectedTournamentId]);
 
@@ -133,7 +133,6 @@ export default function AutomationPage() {
             const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${reg.userEmail}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
             window.open(gmailUrl, '_blank');
 
-            // Brief delay to help browsers handle multiple pop-ups
             await new Promise(resolve => setTimeout(resolve, 300));
         }
 
@@ -150,7 +149,7 @@ export default function AutomationPage() {
                 isOpen={isTemplateEditorOpen}
                 setIsOpen={setIsTemplateEditorOpen}
                 template={editingTemplate}
-                onSave={fetchData} // Refetch all data on save
+                onSave={fetchData}
             />
             <div className="space-y-8">
                 <h1 className="text-2xl md:text-3xl font-bold text-primary">Email Automation</h1>

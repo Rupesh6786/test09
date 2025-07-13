@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Image from 'next/image';
@@ -11,7 +12,7 @@ import { TournamentCard } from '@/components/tournament-card';
 import { TestimonialsSection } from '@/components/testimonials-section';
 import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, where, limit } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, limit } from 'firebase/firestore';
 import type { Tournament } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
@@ -45,7 +46,6 @@ function HeroSection() {
   }, []);
 
   if (!mounted) {
-      // Render a placeholder or null on the server and initial client render
       return (
         <section className="relative h-[90vh] min-h-[600px] w-full overflow-hidden bg-background">
             <div className="relative z-10 flex h-full flex-col items-center justify-end pb-20 text-center sm:pb-28">
@@ -115,20 +115,19 @@ function TournamentsSection() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchTournaments = async () => {
-      setIsLoading(true);
-      try {
-        const q = query(collection(db, 'tournaments'), where('status', '!=', 'Completed'), limit(4));
-        const querySnapshot = await getDocs(q);
+    setIsLoading(true);
+    const q = query(collection(db, 'tournaments'), where('status', '!=', 'Completed'), limit(4));
+    
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
         const fetchedTournaments = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Tournament[];
         setTournaments(fetchedTournaments);
-      } catch (error) {
-        console.error("Error fetching tournaments: ", error);
-      } finally {
         setIsLoading(false);
-      }
-    };
-    fetchTournaments();
+    }, (error) => {
+        console.error("Error fetching tournaments: ", error);
+        setIsLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
 
@@ -286,5 +285,3 @@ function LiveStatsSection() {
     </section>
   );
 }
-
-    

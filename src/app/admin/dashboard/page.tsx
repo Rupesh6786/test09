@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { auth, db } from '@/lib/firebase';
-import { collection, getDocs, query, orderBy, doc, updateDoc, where, runTransaction, increment, getDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { collection, getDocs, doc, query, orderBy, runTransaction, increment, getDoc, arrayUnion, arrayRemove, onSnapshot, type Unsubscribe } from 'firebase/firestore';
 import { Loader2, Users, Trophy, DollarSign, Award, CheckCircle, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Tournament } from '@/lib/data';
@@ -35,53 +35,58 @@ export default function AdminDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  const fetchDashboardData = async () => {
-      setIsLoading(true);
-      try {
-          // Fetch users for total players count
-          const usersSnapshot = await getDocs(collection(db, 'users'));
-          const totalPlayers = usersSnapshot.size;
-
-          // Fetch tournaments to calculate revenue and live count
-          const tournamentsSnapshot = await getDocs(collection(db, 'tournaments'));
-          const fetchedTournaments = tournamentsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data()})) as Tournament[];
-          setAllTournaments(fetchedTournaments);
-          
-          // Fetch registrations for revenue and recent activity
-          const regQuery = query(collection(db, 'registrations'), orderBy('registeredAt', 'desc'));
-          const regSnapshot = await getDocs(regQuery);
-          const fetchedRegistrations = regSnapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data(),
-          })) as Registration[];
-          setRegistrations(fetchedRegistrations);
-          
-          // Calculate stats
-          const liveTournaments = fetchedTournaments.filter(t => t.status === 'Ongoing').length;
-          
-          const confirmedRegistrations = fetchedRegistrations.filter(r => r.paymentStatus === 'Confirmed');
-          const totalRevenue = confirmedRegistrations.reduce((acc, reg) => {
-              const tournament = fetchedTournaments.find(t => t.id === reg.tournamentId);
-              return acc + (tournament?.entryFee || 0);
-          }, 0);
-
-          setStats({ totalPlayers, liveTournaments, totalRevenue });
-
-      } catch (error) {
-          console.error("Error fetching dashboard data: ", error);
-          toast({
-              title: "Error",
-              description: "Failed to fetch dashboard data.",
-              variant: "destructive"
-          })
-      } finally {
-          setIsLoading(false);
-      }
-  };
-
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
+    const unsubscribes: Unsubscribe[] = [];
+    setIsLoading(true);
+
+    try {
+        // Real-time listener for users
+        const usersUnsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
+            setStats(prev => ({ ...prev, totalPlayers: snapshot.size }));
+        });
+        unsubscribes.push(usersUnsubscribe);
+        
+        // Real-time listener for tournaments
+        const tournamentsUnsubscribe = onSnapshot(collection(db, 'tournaments'), (snapshot) => {
+            const fetchedTournaments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data()})) as Tournament[];
+            setAllTournaments(fetchedTournaments);
+            const liveTournaments = fetchedTournaments.filter(t => t.status === 'Ongoing').length;
+            setStats(prev => ({ ...prev, liveTournaments }));
+        });
+        unsubscribes.push(tournamentsUnsubscribe);
+
+        // Real-time listener for registrations
+        const regQuery = query(collection(db, 'registrations'), orderBy('registeredAt', 'desc'));
+        const regUnsubscribe = onSnapshot(regQuery, (snapshot) => {
+            const fetchedRegistrations = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Registration[];
+            setRegistrations(fetchedRegistrations);
+        });
+        unsubscribes.push(regUnsubscribe);
+        
+    } catch (error) {
+         console.error("Error setting up real-time listeners: ", error);
+         toast({
+            title: "Error",
+            description: "Failed to load dashboard data.",
+            variant: "destructive"
+        })
+    } finally {
+        setIsLoading(false);
+    }
+    
+    // Cleanup listeners on component unmount
+    return () => unsubscribes.forEach(unsub => unsub());
+  }, [toast]);
+  
+  useEffect(() => {
+    // This effect recalculates revenue whenever registrations or tournaments change
+    const confirmedRegistrations = registrations.filter(r => r.paymentStatus === 'Confirmed');
+    const totalRevenue = confirmedRegistrations.reduce((acc, reg) => {
+        const tournament = allTournaments.find(t => t.id === reg.tournamentId);
+        return acc + (tournament?.entryFee || 0);
+    }, 0);
+    setStats(prev => ({ ...prev, totalRevenue }));
+  }, [registrations, allTournaments]);
 
   const handleConfirmPayment = async (registration: Registration) => {
       if (!registration.tournamentId || typeof registration.tournamentId !== 'string') {
@@ -114,7 +119,6 @@ export default function AdminDashboardPage() {
             });
         });
         
-        // Draft confirmation email
         const tournament = allTournaments.find(t => t.id === registration.tournamentId);
         const userRef = doc(db, 'users', registration.userId);
         const userSnap = await getDoc(userRef);
@@ -128,9 +132,6 @@ export default function AdminDashboardPage() {
             window.open(gmailUrl, '_blank');
         }
 
-
-        // Re-fetch to update stats and list
-        await fetchDashboardData();
         toast({
             title: "Success",
             description: "Payment confirmed. An email draft has been opened.",
@@ -172,7 +173,6 @@ export default function AdminDashboardPage() {
             });
         });
 
-        await fetchDashboardData();
         toast({
             title: "Success",
             description: "Registration marked as pending.",
@@ -196,7 +196,6 @@ export default function AdminDashboardPage() {
     <div className="space-y-8">
         <h1 className="text-2xl md:text-3xl font-bold text-primary">Dashboard</h1>
         
-        {/* Stats Cards */}
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
             <Link href="/admin/revenue">
                 <Card className="hover:bg-muted/80 transition-colors">
@@ -237,7 +236,6 @@ export default function AdminDashboardPage() {
             </Card>
         </div>
 
-        {/* Recent Registrations */}
         <Card>
             <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Recent Registrations</CardTitle>
@@ -246,7 +244,6 @@ export default function AdminDashboardPage() {
                 </Link>
             </CardHeader>
             <CardContent>
-                {/* Desktop Table View */}
                 <div className="hidden md:block">
                     <Table>
                         <TableHeader>
@@ -287,7 +284,6 @@ export default function AdminDashboardPage() {
                         </TableBody>
                     </Table>
                 </div>
-                {/* Mobile Card View */}
                 <div className="space-y-4 md:hidden">
                     {registrations.length === 0 ? (
                          <div className="text-center h-24 flex items-center justify-center">

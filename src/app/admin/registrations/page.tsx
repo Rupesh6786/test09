@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, query, orderBy, runTransaction, increment, getDoc, arrayUnion, arrayRemove, addDoc, collectionGroup, serverTimestamp, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, doc, query, orderBy, runTransaction, increment, getDoc, arrayUnion, arrayRemove, onSnapshot } from 'firebase/firestore';
 import { Loader2, CheckCircle, Search, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -25,27 +25,32 @@ export default function AdminRegistrationsPage() {
     const [tournamentFilter, setTournamentFilter] = useState('all');
     const { toast } = useToast();
 
-    const fetchData = async () => {
-        setIsLoading(true);
-        try {
-            const tourneySnapshot = await getDocs(query(collection(db, "tournaments"), orderBy("date", "desc")));
-            const fetchedTournaments = tourneySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Tournament[];
-            setTournaments(fetchedTournaments);
-
-            const regSnapshot = await getDocs(query(collection(db, "registrations"), orderBy("registeredAt", "desc")));
-            const fetchedRegistrations = regSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as UserRegistration[];
-            setRegistrations(fetchedRegistrations);
-        } catch (error) {
-            console.error("Error fetching data: ", error);
-            toast({ title: "Error", description: "Failed to fetch registrations.", variant: "destructive" });
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
     useEffect(() => {
-        fetchData();
-    }, []);
+        setIsLoading(true);
+
+        const tourneyUnsubscribe = onSnapshot(query(collection(db, "tournaments"), orderBy("date", "desc")), (snapshot) => {
+            const fetchedTournaments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Tournament[];
+            setTournaments(fetchedTournaments);
+        }, (error) => {
+             console.error("Error fetching tournaments: ", error);
+             toast({ title: "Error", description: "Failed to fetch tournaments.", variant: "destructive" });
+        });
+
+        const regUnsubscribe = onSnapshot(query(collection(db, "registrations"), orderBy("registeredAt", "desc")), (snapshot) => {
+            const fetchedRegistrations = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as UserRegistration[];
+            setRegistrations(fetchedRegistrations);
+            setIsLoading(false);
+        }, (error) => {
+            console.error("Error fetching registrations: ", error);
+            toast({ title: "Error", description: "Failed to fetch registrations.", variant: "destructive" });
+            setIsLoading(false);
+        });
+
+        return () => {
+            tourneyUnsubscribe();
+            regUnsubscribe();
+        };
+    }, [toast]);
 
     const filteredRegistrations = useMemo(() => {
         const lowercasedSearchTerm = searchTerm.toLowerCase();
@@ -83,27 +88,23 @@ export default function AdminRegistrationsPage() {
                 const tournamentData = tournamentDoc.data() as Tournament;
                 const currentSlotsAllotted = tournamentData.slotsAllotted || 0;
 
-                // Ensure we don't overfill
                 if (currentSlotsAllotted >= tournamentData.slotsTotal) {
                     throw "No slots left in this tournament.";
                 }
 
                 const newSlotsAllotted = currentSlotsAllotted + 1;
 
-                // Update the current registration and tournament
                 transaction.update(registrationRef, { paymentStatus: 'Confirmed' });
                 transaction.update(tournamentRef, { 
                     slotsAllotted: newSlotsAllotted,
                     confirmedTeams: arrayUnion({ teamName: registration.teamName || '', gameIds: registration.gameIds || [] })
                 });
 
-                // If the tournament is now full, mark it as 'Ongoing'
                 if (newSlotsAllotted === tournamentData.slotsTotal && tournamentData.status === 'Upcoming') {
                     transaction.update(tournamentRef, { status: 'Ongoing' });
                 }
             });
 
-            // Draft confirmation email
             const tournament = tournaments.find(t => t.id === registration.tournamentId);
             const userRef = doc(db, 'users', registration.userId);
             const userSnap = await getDoc(userRef);
@@ -117,8 +118,6 @@ export default function AdminRegistrationsPage() {
                 window.open(gmailUrl, '_blank');
             }
 
-
-            await fetchData();
             toast({ title: "Success", description: "Payment confirmed.", action: <CheckCircle className="h-5 w-5 text-green-500" />});
         } catch (error: any) {
             console.error("Error confirming payment: ", error);
@@ -154,7 +153,6 @@ export default function AdminRegistrationsPage() {
                 });
             });
             
-            await fetchData();
             toast({ title: "Success", description: "Registration marked as pending. Slot has been freed up.", action: <XCircle className="h-5 w-5 text-yellow-500" />});
         } catch (error: any) {
             console.error("Error marking as pending: ", error);
@@ -201,7 +199,6 @@ export default function AdminRegistrationsPage() {
 
             <Card>
                 <CardContent className="p-0">
-                    {/* Desktop Table View */}
                     <div className="hidden md:block">
                         <Table>
                             <TableHeader>
@@ -251,7 +248,6 @@ export default function AdminRegistrationsPage() {
                         </Table>
                     </div>
 
-                    {/* Mobile Card View */}
                     <div className="md:hidden">
                         {isLoading ? (
                             <div className="flex justify-center items-center h-24">
@@ -293,5 +289,3 @@ export default function AdminRegistrationsPage() {
         </div>
     );
 }
-
-    

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
@@ -8,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, updateDoc, deleteDoc, query, where, orderBy } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { Loader2, Search, UserX, UserCheck, Trash2, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -44,27 +45,24 @@ export default function AdminUsersPage() {
   const [selectedUserForWins, setSelectedUserForWins] = useState<UserProfileData | null>(null);
   const { toast } = useToast();
 
-  const fetchUsers = async () => {
-    setIsLoading(true);
-    try {
-      const querySnapshot = await getDocs(collection(db, 'users'));
-      const fetchedUsers = querySnapshot.docs.map(doc => doc.data() as UserProfileData);
-      setUsers(fetchedUsers);
-    } catch (error) {
-      console.error("Error fetching users: ", error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch users.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    setIsLoading(true);
+    const unsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
+        const fetchedUsers = snapshot.docs.map(doc => doc.data() as UserProfileData);
+        setUsers(fetchedUsers);
+        setIsLoading(false);
+    }, (error) => {
+        console.error("Error fetching users: ", error);
+        toast({
+            title: "Error",
+            description: "Failed to fetch users.",
+            variant: "destructive"
+        });
+        setIsLoading(false);
+    });
+    
+    return () => unsubscribe();
+  }, [toast]);
 
   const filteredUsers = useMemo(() => {
     return users
@@ -80,7 +78,6 @@ export default function AdminUsersPage() {
     const userRef = doc(db, 'users', uid);
     try {
       await updateDoc(userRef, { status: newStatus });
-      await fetchUsers(); // Re-fetch to update UI
       toast({
         title: "Success",
         description: `User has been ${newStatus === 'banned' ? 'banned' : 'unbanned'}.`
@@ -91,10 +88,8 @@ export default function AdminUsersPage() {
   };
 
   const handleDeleteUser = async (uid: string) => {
-    // Note: This only deletes Firestore record. Auth user needs separate deletion.
     try {
         await deleteDoc(doc(db, "users", uid));
-        await fetchUsers(); // Re-fetch
         toast({
             title: "User Deleted",
             description: "The user's data has been removed from Firestore.",

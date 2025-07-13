@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Loader2 } from 'lucide-react';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import type { WinnerLog } from '@/lib/data';
 import { format } from 'date-fns';
 
@@ -15,20 +15,18 @@ export default function AdminLeaderboardPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchWinners = async () => {
-        setIsLoading(true);
-        try {
-            const q = query(collection(db, "winners"), orderBy("wonAt", "desc"));
-            const querySnapshot = await getDocs(q);
-            const fetchedWinners = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WinnerLog[];
-            setWinners(fetchedWinners);
-        } catch (error) {
-            console.error("Error fetching winners:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-    fetchWinners();
+    setIsLoading(true);
+    const q = query(collection(db, "winners"), orderBy("wonAt", "desc"));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const fetchedWinners = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WinnerLog[];
+        setWinners(fetchedWinners);
+        setIsLoading(false);
+    }, (error) => {
+        console.error("Error fetching winners:", error);
+        setIsLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   return (
