@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Image from 'next/image';
@@ -12,7 +11,7 @@ import { TournamentCard } from '@/components/tournament-card';
 import { TestimonialsSection } from '@/components/testimonials-section';
 import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, query, where, limit } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, limit, getDocs } from 'firebase/firestore';
 import type { Tournament } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
@@ -20,6 +19,44 @@ import { UserCheck, ShieldCheck, Zap, Gamepad2, Trophy, Users, Award, UserPlus, 
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 
+
+// This is now an async Server Component to fetch data on the server
+async function TournamentsSection() {
+  // Fetch only the top 4 upcoming tournaments on the server
+  const q = query(collection(db, 'tournaments'), where('status', '!=', 'Completed'), limit(4));
+  const querySnapshot = await getDocs(q);
+  const tournaments = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Tournament[];
+
+  return (
+    <section id="tournaments" className="py-16 md:py-24">
+      <div className="container mx-auto px-4">
+        <div className="text-center mb-12">
+          <h2 className="font-headline text-3xl md:text-4xl font-bold uppercase tracking-wider text-primary text-shadow-primary">Tournaments</h2>
+          <p className="text-lg text-muted-foreground mt-2">Upcoming Matches & Ongoing Battles</p>
+        </div>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {tournaments.length > 0 ? (
+            tournaments.map((tournament) => (
+              <TournamentCard key={tournament.id} tournament={tournament} />
+            ))
+          ) : (
+             Array.from({ length: 4 }).map((_, i) => (
+              <Card key={i}><CardContent className="p-4"><Skeleton className="h-[300px] w-full" /></CardContent></Card>
+            ))
+          )}
+        </div>
+        <div className="text-center mt-12">
+          <Button asChild variant="link" className="text-primary text-lg">
+            <Link href="/tournaments">View All Tournaments →</Link>
+          </Button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+
+// The rest of the page remains a client component for interactivity
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col">
@@ -110,56 +147,6 @@ function HeroSection() {
   );
 }
 
-function TournamentsSection() {
-  const [tournaments, setTournaments] = useState<Tournament[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    setIsLoading(true);
-    const q = query(collection(db, 'tournaments'), where('status', '!=', 'Completed'), limit(4));
-    
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const fetchedTournaments = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Tournament[];
-        setTournaments(fetchedTournaments);
-        setIsLoading(false);
-    }, (error) => {
-        console.error("Error fetching tournaments: ", error);
-        setIsLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-
-  return (
-    <section id="tournaments" className="py-16 md:py-24">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
-          <h2 className="font-headline text-3xl md:text-4xl font-bold uppercase tracking-wider text-primary text-shadow-primary">Tournaments</h2>
-          <p className="text-lg text-muted-foreground mt-2">Upcoming Matches & Ongoing Battles</p>
-        </div>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {isLoading ? (
-            Array.from({ length: 4 }).map((_, i) => (
-              <Card key={i}><CardContent className="p-4"><Skeleton className="h-[300px] w-full" /></CardContent></Card>
-            ))
-          ) : tournaments.length > 0 ? (
-            tournaments.map((tournament) => (
-              <TournamentCard key={tournament.id} tournament={tournament} />
-            ))
-          ) : (
-            <p className="col-span-full text-center text-muted-foreground">No upcoming tournaments found.</p>
-          )}
-        </div>
-        <div className="text-center mt-12">
-          <Button asChild variant="link" className="text-primary text-lg">
-            <Link href="/tournaments">View All Tournaments →</Link>
-          </Button>
-        </div>
-      </div>
-    </section>
-  );
-}
 
 function HowItWorksSection() {
   return (
