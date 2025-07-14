@@ -34,7 +34,7 @@ async function TournamentsSection() {
           <h2 className="font-headline text-3xl md:text-4xl font-bold uppercase tracking-wider text-primary text-shadow-primary">Tournaments</h2>
           <p className="text-lg text-muted-foreground mt-2">Upcoming Matches & Ongoing Battles</p>
         </div>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 justify-center">
           {tournaments.length > 0 ? (
             tournaments.map((tournament) => (
               <TournamentCard key={tournament.id} tournament={tournament} />
