@@ -4,6 +4,7 @@ import type { Timestamp } from "firebase/firestore";
 export type BracketTeam = {
   teamName: string;
   gameIds: string[];
+  points?: number;
 };
 
 export type BracketMatchup = {

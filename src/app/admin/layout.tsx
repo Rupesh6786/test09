@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase';
 import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
-import { Loader2, LayoutDashboard, Users, Trophy, DollarSign, Award, Settings, LogOut, ClipboardList, MessageSquare, Menu, Bot } from 'lucide-react';
+import { Loader2, LayoutDashboard, Users, Trophy, DollarSign, Award, Settings, LogOut, ClipboardList, MessageSquare, Menu, Bot, Calculator } from 'lucide-react';
 import { SidebarProvider, Sidebar, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarHeader, SidebarFooter, SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -44,6 +44,11 @@ function AdminSidebar({ onLogout }: { onLogout: () => Promise<void> }) {
                 <SidebarMenuItem>
                     <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/matches')}>
                         <Link href="/admin/matches/create" onClick={handleLinkClick}><Trophy /><span>Tournaments</span></Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={pathname === '/admin/calculator'}>
+                        <Link href="/admin/calculator" onClick={handleLinkClick}><Calculator /><span>Calculator</span></Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                     <SidebarMenuItem>
